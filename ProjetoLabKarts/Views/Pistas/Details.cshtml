@@ -1,0 +1,299 @@
+﻿@model ProjetoLabKarts.Models.PaginatedList<ProjetoLabKarts.Models.SessaoKart>
+
+@{
+    ViewData["Title"] = $"Sessões da pista {ViewBag.PistaSelecionada}";
+
+    var cols = (string[])ViewBag.SelectedCols;
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Sessões da pista <span class="text-primary">"@ViewBag.PistaSelecionada"</span></h2>
+        <button type="button"
+                onclick="window.history.back();"
+                class="btn btn-outline-secondary">
+            ← Voltar
+        </button>
+    </div>
+    <div class="card shadow border rounded-4 h-100">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <div class="d-flex flex-column">
+                    <h4 class="fw-bold mb-0">Sessões</h4>
+                    <p class="text-muted mb-0">Telemetria das sessões carregadas</p>
+                </div>
+
+                <div>
+                    <form asp-controller="Pistas" asp-action="Details" asp-route-id="@ViewBag.PistaSelecionada" method="get" class="d-flex align-items-center gap-2">
+                        <!-- Pesquisa por pista -->
+                        <input type="text"
+                               name="searchString"
+                               class="form-control"
+                               placeholder="Pesquisar piloto..."
+                               value="@(ViewBag.CurrentFilter ?? "")" />
+
+                        <!-- Ordenação -->
+                        <select name="sortOrder"
+                                asp-items="ViewBag.SortList"
+                                class="form-select"
+                                onchange="this.form.submit()">
+                            <option value="">-- Ordenar por --</option>
+                        </select>
+                    </form>
+                </div>
+
+                <div id="multi-details-wrapper" class="d-none">
+                    <form id="multi-details-form" method="get" action="/Analisador/Index">
+                        <input type="hidden" name="ficheiros" id="ficheirosSelecionados" />
+                        <button type="submit"
+                                class="bg-white border rounded-3 shadow-sm px-4 py-2 fw-semibold text-muted"
+                                style="transition: all 0.2s ease;">
+                            Detalhes
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-borderless align-middle">
+                    <thead class="text-muted border-bottom">
+                        <tr>
+                            <th></th>
+                            @if (cols.Contains("NomeFicheiro"))
+                            {
+                                <th>@Html.DisplayNameFor(m => m.First().NomeFicheiro)</th>
+                            }
+                            @if (cols.Contains("NomePiloto"))
+                            {
+                                <th>@Html.DisplayNameFor(m => m.First().NomePiloto)</th>
+                            }
+                            @if (cols.Contains("NomePista"))
+                            {
+                                <th>@Html.DisplayNameFor(m => m.First().NomePista)</th>
+                            }
+                            @if (cols.Contains("NumeroVoltas"))
+                            {
+                                <th>@Html.DisplayNameFor(m => m.First().NumeroVoltas)</th>
+                            }
+                            @if (cols.Contains("MelhorVolta"))
+                            {
+                                <th>@Html.DisplayNameFor(m => m.First().MelhorVolta)</th>
+                            }
+                            @if (cols.Contains("NumeroMelhorVolta"))
+                            {
+                                <th>@Html.DisplayNameFor(m => m.First().NumeroMelhorVolta)</th>
+                            }
+                            @if (cols.Contains("VelocidadeMax"))
+                            {
+                                <th>@Html.DisplayNameFor(m => m.First().VelocidadeMax)</th>
+                            }
+                            @if (cols.Contains("CoordenadaLat"))
+                            {
+                                <th>@Html.DisplayNameFor(m => m.First().CoordenadaLat)</th>
+                            }
+                            @if (cols.Contains("CoordenadaLong"))
+                            {
+                                <th>@Html.DisplayNameFor(m => m.First().CoordenadaLong)</th>
+                            }
+                            @if (cols.Contains("DataHora"))
+                            {
+                                <th>@Html.DisplayNameFor(m => m.First().DataHora)</th>
+                            }
+                            @if (cols.Contains("DataHoraInsercao"))
+                            {
+                                <th>@Html.DisplayNameFor(m => m.First().DataHoraInsercao)</th>
+                            }
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var sessao in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <input type="checkbox" name="selecionados" value="@sessao.NomeFicheiro" data-pista="@sessao.NomePista"/>
+                                </td>
+                                @if (cols.Contains("NomeFicheiro"))
+                                {
+                                    <td>@sessao.NomeFicheiro</td>
+                                }
+                                @if (cols.Contains("NomePiloto"))
+                                {
+                                    <td>@sessao.NomePiloto</td>
+                                }
+                                @if (cols.Contains("NomePista"))
+                                {
+                                    <td>@sessao.NomePista</td>
+                                }
+                                @if (cols.Contains("NumeroVoltas"))
+                                {
+                                    <td>@sessao.NumeroVoltas</td>
+                                }
+                                @if (cols.Contains("MelhorVolta"))
+                                {
+                                    <td>@sessao.MelhorVolta</td>
+                                }
+                                @if (cols.Contains("NumeroMelhorVolta"))
+                                {
+                                    <td>@sessao.NumeroMelhorVolta</td>
+                                }
+                                @if (cols.Contains("VelocidadeMax"))
+                                {
+                                    <td>@sessao.VelocidadeMax</td>
+                                }
+                                @if (cols.Contains("CoordenadaLat"))
+                                {
+                                    <td>@sessao.CoordenadaLat</td>
+                                }
+                                @if (cols.Contains("CoordenadaLong"))
+                                {
+                                    <td>@sessao.CoordenadaLong</td>
+                                }
+                                @if (cols.Contains("DataHora"))
+                                {
+                                    <td>@sessao.DataHora.ToString("dd/MM/yyyy HH:mm")</td>
+                                }
+                                @if (cols.Contains("DataHoraInsercao"))
+                                {
+                                    <td>@sessao.DataHoraInsercao.ToString("dd/MM/yyyy HH:mm")</td>
+                                }
+                                <td>
+                                    <a asp-controller="Analisador" asp-action="Index" asp-route-ficheiros="@sessao.NomeFicheiro">Detalhes</a> |
+                                    <a asp-controller="Pistas" asp-action="DownloadPistas" asp-route-ficheiro="@sessao.NomeFicheiro">Download</a> |
+                                    <a href="#" class="link-danger delete-sessao" data-id="@sessao.NomeFicheiro">Eliminar</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <!-- Paginação -->
+            <nav aria-label="Paginação de Pilotos">
+                <ul class="pagination justify-content-center">
+                    @if (Model.HasPreviousPage)
+                    {
+                        <li class="page-item">
+                            <a class="page-link"
+                               asp-action="Details"
+                               asp-route-pageNumber="@(Model.PageIndex - 1)"
+                               asp-route-searchString="@(ViewBag.CurrentFilter)"
+                               asp-route-sortOrder="@(ViewBag.SelectedSort)">
+                                «
+                            </a>
+                        </li>
+                    }
+                    @for (int i = 1; i <= Model.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                            <a class="page-link"
+                               asp-action="Details"
+                               asp-route-pageNumber="@i"
+                               asp-route-searchString="@(ViewBag.CurrentFilter)"
+                               asp-route-sortOrder="@(ViewBag.SelectedSort)">
+                                @i
+                            </a>
+                        </li>
+                    }
+                    @if (Model.HasNextPage)
+                    {
+                        <li class="page-item">
+                            <a class="page-link"
+                               asp-action="Details"
+                               asp-route-pageNumber="@(Model.PageIndex + 1)"
+                               asp-route-searchString="@(ViewBag.CurrentFilter)"
+                               asp-route-sortOrder="@(ViewBag.SelectedSort)">
+                                »
+                            </a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        </div>
+    </div>
+
+    <a asp-action="Index" class="btn btn-outline-secondary mt-3">← Voltar</a>
+</div>
+
+@section Scripts {
+    <script>
+        const checkboxes = document.querySelectorAll('input[name="selecionados"]');
+        const wrapper = document.getElementById("multi-details-wrapper");
+        const hiddenInput = document.getElementById("ficheirosSelecionados");
+        const form = document.getElementById("multi-details-form");
+
+        checkboxes.forEach(cb => {
+            cb.addEventListener("change", () => {
+                const selected = Array.from(checkboxes).filter(c => c.checked);
+
+                if (selected.length >= 2) {
+                    wrapper.classList.remove("d-none");
+                    hiddenInput.value = selected.map(c => c.value).join(",");
+                } else {
+                    wrapper.classList.add("d-none");
+                    hiddenInput.value = "";
+                }
+            });
+        });
+
+        form.addEventListener("submit", function (e) {
+            const selected = Array.from(checkboxes).filter(c => c.checked);
+
+            // Recolher todas as pistas associadas aos ficheiros selecionados
+            const pistas = selected.map(cb => cb.dataset.pista);
+
+            const primeiraPista = pistas[0];
+            const pistasIguais = pistas.every(p => p === primeiraPista);
+
+            if (!pistasIguais) {
+                e.preventDefault();
+                alert("Erro: Só é possível comparar sessões da mesma pista.");
+            }
+        });
+
+        document.querySelectorAll('input[name="selecionados"]').forEach(checkbox => {
+            checkbox.addEventListener("change", () => {
+                const selected = Array.from(document.querySelectorAll('input[name="selecionados"]:checked'))
+                                      .map(cb => cb.value);
+
+                const wrapper = document.getElementById("multi-details-wrapper");
+                const hiddenInput = document.getElementById("ficheirosSelecionados");
+
+                if (selected.length >= 2) {
+                    wrapper.classList.remove("d-none");
+                    hiddenInput.value = selected.join(",");
+                } else {
+                    wrapper.classList.add("d-none");
+                    hiddenInput.value = "";
+                }
+            });
+        });
+
+        document.querySelectorAll(".delete-sessao").forEach(btn => {
+             btn.addEventListener("click", async function (e) {
+                e.preventDefault();
+
+                const id = this.dataset.id;
+                if (!id) return;
+
+                const confirmacao = confirm(`Tem a certeza que deseja eliminar o ficheiro "${id}"?`);
+                if (!confirmacao) return;
+
+                const response = await fetch("/Dashboard/Delete", {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ nomeFicheiro: id })
+                });
+
+                if (response.ok) {
+                    alert("Sessão eliminada com sucesso.");
+                    location.reload(); // ou remove a linha da tabela dinamicamente
+                } else {
+                    const error = await response.text();
+                    alert("Erro ao eliminar: " + error);
+                }
+            });
+        });
+    </script>
+}

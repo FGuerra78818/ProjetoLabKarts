@@ -1,0 +1,297 @@
+﻿@model ProjetoLabKarts.Models.PaginatedList<ProjetoLabKarts.Models.SessaoKart>
+
+@{
+    ViewData["Title"] = "Pistas";
+
+    var cols = (string[])ViewBag.SelectedCols;
+}
+
+<div class="container py-4">
+    <div class="row align-items-stretch justify-content-between mb-5 gap-3 gap-lg-0">
+        <div class="col-lg-4 d-flex flex-column">
+            <h1 class="mb-1 fs-1">Pistas</h1>
+            <p class="lead fs-6 mb-0">Gere as tuas pistas</p>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow border p-2 h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Pistas Carregadas</h5>
+                    <h3 class="card-text fw-bold">@ViewBag.numeroDePistas</h3>
+                    <small class="text-muted">+@ViewBag.numeroDePistasUltimoMes neste mês</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card do botão de upload (mantido igual) -->
+        <div class="col-lg-4">
+            <div class="card shadow border rounded-3 h-100">
+                <div class="card-body p-0">
+                    <form id="upload-form" method="post" enctype="multipart/form-data" action="/Dashboard/Upload" class="text-end h-100">
+                        <div id="btn-upload" class="border border-secondary rounded-3 py-4 px-5 text-center h-100" style="cursor: pointer;">
+                            <div>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor" class="bi bi-upload mb-2" viewBox="0 0 16 16">
+                                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10.4a.5.5 0 0 1 1 0v2.6a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V10.4a.5.5 0 0 1 .5-.5z" />
+                                    <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3.5 3.5a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.854 5.354a.5.5 0 1 1-.708-.708l3.5-3.5z" />
+                                </svg>
+                            </div>
+                            <div class="fw-semibold">Carregar ficheiro .xrk</div>
+                            <small class="text-muted">Clique para escolher um ficheiro</small>
+                        </div>
+                        <input id="file-upload" type="file" name="arquivo" accept=".xrk" hidden />
+                        <div id="upload-result" class="mt-0 text-muted fw-bold"></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+
+    <div class="card shadow border rounded-4 h-100">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <div class="d-flex flex-column">
+                    <h4 class="fw-bold mb-0">Pistas</h4>
+                    <p class="text-muted mb-0">Pistas das sessões carregadas</p>
+                </div>
+
+                <div>
+                    <form asp-action="Index" method="get" class="d-flex align-items-center gap-2">
+                        <!-- Campo de pesquisa -->
+                        <input type="text"
+                               name="searchString"
+                               class="form-control"
+                               placeholder="Pesquisar pistas..."
+                               value="@(ViewBag.CurrentFilter ?? "")" />
+
+                        <!-- Dropdown de ordenação -->
+                        <select name="sortOrder"
+                                asp-items="ViewBag.SortList"
+                                class="form-select"
+                                onchange="this.form.submit()">
+                            <option value="">-- Ordenar por --</option>
+                        </select>
+                    </form>
+                </div>
+
+                <div id="multi-details-wrapper" class="d-none">
+                    <form id="multi-details-form" method="get" action="/Sessao/DetalhesMultiplos">
+                        <input type="hidden" name="ficheiros" id="ficheirosSelecionados" />
+                        <button type="submit"
+                                class="bg-white border rounded-3 shadow-sm px-4 py-2 fw-semibold text-muted"
+                                style="transition: all 0.2s ease;">
+                            Detalhes
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-borderless align-middle">
+                    <thead class="text-muted border-bottom">
+                        <tr>
+                            @if (cols.Contains("NomeFicheiro"))
+                            {
+                                <th>@Html.DisplayNameFor(m => m.First().NomeFicheiro)</th>
+                            }
+                            @if (cols.Contains("NomePiloto"))
+                            {
+                                <th>@Html.DisplayNameFor(m => m.First().NomePiloto)</th>
+                            }
+                            @if (cols.Contains("NomePista"))
+                            {
+                                <th>@Html.DisplayNameFor(m => m.First().NomePista)</th>
+                            }
+                            @if (cols.Contains("NumeroVoltas"))
+                            {
+                                <th>@Html.DisplayNameFor(m => m.First().NumeroVoltas)</th>
+                            }
+                            @if (cols.Contains("MelhorVolta"))
+                            {
+                                <th>@Html.DisplayNameFor(m => m.First().MelhorVolta)</th>
+                            }
+                            @if (cols.Contains("NumeroMelhorVolta"))
+                            {
+                                <th>@Html.DisplayNameFor(m => m.First().NumeroMelhorVolta)</th>
+                            }
+                            @if (cols.Contains("VelocidadeMax"))
+                            {
+                                <th>@Html.DisplayNameFor(m => m.First().VelocidadeMax)</th>
+                            }
+                            @if (cols.Contains("CoordenadaLat"))
+                            {
+                                <th>@Html.DisplayNameFor(m => m.First().CoordenadaLat)</th>
+                            }
+                            @if (cols.Contains("CoordenadaLong"))
+                            {
+                                <th>@Html.DisplayNameFor(m => m.First().CoordenadaLong)</th>
+                            }
+                            @if (cols.Contains("DataHora"))
+                            {
+                                <th>@Html.DisplayNameFor(m => m.First().DataHora)</th>
+                            }
+                            @if (cols.Contains("DataHoraInsercao"))
+                            {
+                                <th>@Html.DisplayNameFor(m => m.First().DataHoraInsercao)</th>
+                            }
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                @if (cols.Contains("NomeFicheiro"))
+                                {
+                                    <td>@item.NomeFicheiro</td>
+                                }
+                                @if (cols.Contains("NomePiloto"))
+                                {
+                                    <td>@item.NomePiloto</td>
+                                }
+                                @if (cols.Contains("NomePista"))
+                                {
+                                    <td>@item.NomePista</td>
+                                }
+                                @if (cols.Contains("NumeroVoltas"))
+                                {
+                                    <td>@item.NumeroVoltas</td>
+                                }
+                                @if (cols.Contains("MelhorVolta"))
+                                {
+                                    <td>@item.MelhorVolta</td>
+                                }
+                                @if (cols.Contains("NumeroMelhorVolta"))
+                                {
+                                    <td>@item.NumeroMelhorVolta</td>
+                                }
+                                @if (cols.Contains("VelocidadeMax"))
+                                {
+                                    <td>@item.VelocidadeMax</td>
+                                }
+                                @if (cols.Contains("CoordenadaLat"))
+                                {
+                                    <td>@item.CoordenadaLat</td>
+                                }
+                                @if (cols.Contains("CoordenadaLong"))
+                                {
+                                    <td>@item.CoordenadaLong</td>
+                                }
+                                @if (cols.Contains("DataHora"))
+                                {
+                                    <td>@item.DataHora.ToString("dd/MM/yyyy HH:mm")</td>
+                                }
+                                @if (cols.Contains("DataHoraInsercao"))
+                                {
+                                    <td>@item.DataHoraInsercao.ToString("dd/MM/yyyy HH:mm")</td>
+                                }
+                                <td>
+                                    <a asp-action="Details" asp-route-id="@item.NomePista">Detalhes</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <!-- Paginação -->
+            <nav aria-label="Paginação de Pilotos">
+                <ul class="pagination justify-content-center">
+                    @if (Model.HasPreviousPage)
+                    {
+                        <li class="page-item">
+                            <a class="page-link"
+                               asp-action="Index"
+                               asp-route-pageNumber="@(Model.PageIndex - 1)"
+                               asp-route-searchString="@(ViewBag.CurrentFilter)"
+                               asp-route-sortOrder="@(ViewBag.SelectedSort)">
+                                «
+                            </a>
+                        </li>
+                    }
+                    @for (int i = 1; i <= Model.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                            <a class="page-link"
+                               asp-action="Index"
+                               asp-route-pageNumber="@i"
+                               asp-route-searchString="@(ViewBag.CurrentFilter)"
+                               asp-route-sortOrder="@(ViewBag.SelectedSort)">
+                                @i
+                            </a>
+                        </li>
+                    }
+                    @if (Model.HasNextPage)
+                    {
+                        <li class="page-item">
+                            <a class="page-link"
+                               asp-action="Index"
+                               asp-route-pageNumber="@(Model.PageIndex + 1)"
+                               asp-route-searchString="@(ViewBag.CurrentFilter)"
+                               asp-route-sortOrder="@(ViewBag.SelectedSort)">
+                                »
+                            </a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Upload automático ao selecionar ficheiro
+        const fileInput = document.getElementById("file-upload");
+        const uploadBtn = document.getElementById("btn-upload");
+        const resultBox = document.getElementById("upload-result");
+
+        uploadBtn.addEventListener("click", () => fileInput.click());
+
+        fileInput.addEventListener("change", async function () {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            const check = await fetch(`/Dashboard/CheckFileExists?fileName=${encodeURIComponent(file.name)}`);
+            const result = await check.json();
+
+            let proceed = true;
+            if (result.exists) {
+                proceed = confirm(`Já existe um ficheiro com o nome "${file.name}". Deseja substituí-lo?`);
+            }
+
+            if (proceed) {
+                const formData = new FormData();
+                formData.append("arquivo", file);
+
+                const upload = await fetch("/Dashboard/Upload", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const responseText = await upload.text();
+                resultBox.textContent = responseText;
+                location.reload();
+            } else {
+                resultBox.textContent = "Upload cancelado pelo utilizador.";
+            }
+        });
+
+        document.querySelectorAll('input[name="selecionados"]').forEach(checkbox => {
+            checkbox.addEventListener("change", () => {
+                const selected = Array.from(document.querySelectorAll('input[name="selecionados"]:checked'))
+                                      .map(cb => cb.value);
+
+                const wrapper = document.getElementById("multi-details-wrapper");
+                const hiddenInput = document.getElementById("ficheirosSelecionados");
+
+                if (selected.length >= 2) {
+                    wrapper.classList.remove("d-none");
+                    hiddenInput.value = selected.join(",");
+                } else {
+                    wrapper.classList.add("d-none");
+                    hiddenInput.value = "";
+                }
+            });
+        });
+    </script>
+}

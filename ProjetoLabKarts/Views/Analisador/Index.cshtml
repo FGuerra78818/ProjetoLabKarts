@@ -1,0 +1,154 @@
+﻿@model IEnumerable<ProjetoLabKarts.Models.SessaoKart>
+@using ProjetoLabKarts.Interop
+
+@{
+    ViewData["Title"] = "Análise de Sessões";
+    var channelsByFile = (Dictionary<string, List<ChannelData>>)ViewBag.ChannelsByFile;
+    var firstSession = Model.FirstOrDefault()?.NomeFicheiro;
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex flex-column">
+            <h2 class="mb-0">Sessões Selecionadas para Análise</h2>
+            <p class="lead fs-6 mb-0">Análise da telemetria das sessões</p>
+        </div>
+
+        <button type="button"
+                onclick="window.history.back();"
+                class="btn btn-outline-secondary">
+            ← Voltar
+        </button>
+    </div>
+
+
+    <div class="row g-3 mb-4 align-items-stretch">
+        <div class="col-md-4">
+            <div class="card shadow border rounded-3 p-2 h-100">
+                <div class="card-body d-flex flex-column gap-2">
+                    <h5 class="card-title">Melhor Volta</h5>
+                    <h3 class="card-text fw-bold">@ViewBag.melhorVolta</h3>
+                    <small class="text-muted">
+                        -@ViewBag.diferencaMelhorVoltaDosOutrosFicheiros para a Melhor Volta dos outros ficheiros
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow border p-2 h-100">
+                <div class="card-body d-flex flex-column gap-2">
+                    <h5 class="card-title">Número de Voltas</h5>
+                    <h3 class="card-text fw-bold">@ViewBag.numeroDeVoltas</h3>
+                    <small class="text-muted"></small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow border p-2 h-100">
+                <div class="card-body d-flex flex-column gap-2">
+                    <h5 class="card-title">Velocidade Máxima</h5>
+                    <h3 class="card-text fw-bold">@ViewBag.velocidadeMaxima km/h</h3>
+                    <small class="text-muted">
+                        +@ViewBag.diferencaVelocidadeMaximaDosOutrosFicheiros para a Velocidade Máxima dos outros ficheiros
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <div class="row">
+        <!-- Coluna esquerda com tabelas -->
+        <div class="col-lg-5">
+
+            @if (!Model.Any())
+            {
+                <div class="alert alert-warning">Nenhuma sessão foi selecionada.</div>
+            }
+            else
+            {
+                <!-- 1ª Tabela clicável -->
+                <table class="table table-borderless mb-4" id="sessionTable">
+                    <tbody>
+                        @foreach (var s in Model)
+                        {
+                            var isActive = s.NomeFicheiro == firstSession ? "table-active" : "";
+                            <tr class="clickable-row @isActive" data-session="@s.NomeFicheiro" style="cursor:pointer">
+                                <td class="fw-semibold text-muted">
+                                    @s.MelhorVolta - @s.NumeroMelhorVolta
+                                </td>
+                                <td class="text-end text-muted" style="white-space: nowrap;">
+                                    @s.DataHoraInsercao.ToString("yyyy, MMM dd h:mm tt", System.Globalization.CultureInfo.InvariantCulture)
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                <!-- 2ª Tabela de detalhes -->
+                <h4 class="fw-bold mb-3">Detalhe dos Canais de Telemetria</h4>
+                <div id="channelDetails">
+                    @foreach (var s in Model)
+                    {
+                        var isVisible = s.NomeFicheiro == firstSession ? "" : "d-none";
+                        <div class="channel-details @isVisible" data-session="@s.NomeFicheiro">
+                            <div class="table-responsive mb-4">
+                                <table class="table table-borderless align-middle">
+                                    <thead class="text-muted border-bottom">
+                                        <tr>
+                                            <th>Canal</th>
+                                            <th>Unidades</th>
+                                            <th># Pontos</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @{
+                                            var canais = channelsByFile[s.NomeFicheiro];
+                                        }
+                                        @foreach (var ch in canais)
+                                        {
+                                            <tr>
+                                                <td>@ch.Name</td>
+                                                <td>@ch.Units</td>
+                                                <td>@ch.Values.Length</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Coluna direita vazia para espaço livre -->
+        <div class="col-lg-4">
+            <!-- Espaço livre -->
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const rows    = document.querySelectorAll('#sessionTable .clickable-row');
+            const details = document.querySelectorAll('.channel-details');
+
+            rows.forEach(row => {
+                row.addEventListener('click', () => {
+                    // Destaque na tabela
+                    rows.forEach(r => r.classList.remove('table-active'));
+                    row.classList.add('table-active');
+
+                    const sessionId = row.dataset.session;
+                    // Mostrar/esconder detalhes
+                    details.forEach(div => {
+                        div.classList.toggle('d-none', div.dataset.session !== sessionId);
+                    });
+                });
+            });
+        });
+    </script>
+}

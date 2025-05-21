@@ -1,0 +1,101 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Views\NovaPasta1\**" />
+    <Compile Remove="Views\NovaPasta\**" />
+    <Content Remove="Views\NovaPasta1\**" />
+    <Content Remove="Views\NovaPasta\**" />
+    <EmbeddedResource Remove="Views\NovaPasta1\**" />
+    <EmbeddedResource Remove="Views\NovaPasta\**" />
+    <None Remove="Views\NovaPasta1\**" />
+    <None Remove="Views\NovaPasta\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.000.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.002.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.003.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.004.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.005.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.006.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.007.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.010.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.011.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.017.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.018.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.019.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.020.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.021.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.022.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.023.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.024.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.025.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.026.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.027.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.028.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.029.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.030.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.031.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.032.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.033.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.034.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.035.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.036.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.037.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.038.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.039.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.040.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.041.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.042.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.043.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.044.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.045.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.046.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.047.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.048.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.049.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.050.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.051.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.052.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.053.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.054.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.055.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.056.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.057.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.058.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.059.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.060.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.061.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.062.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_091612_Diogo Caetano_217_Braga 4 sect_a_0276.xrk.063.tmp" />
+    <Content Remove="wwwroot\Uploads\20221009_145044_Diogo Caetano_217_Braga 4 sect_a_0280.xrk" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="wwwroot\dll\MatLabXRK.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\Uploads\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.4" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.4" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.4">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.7" />
+  </ItemGroup>
+
+</Project>

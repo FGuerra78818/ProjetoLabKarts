@@ -1,0 +1,265 @@
+﻿@model IEnumerable<ProjetoLabKarts.Models.SessaoKart>
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="container my-4">
+    <div class="d-flex flex-column flex-lg-row justify-content-between mb-3">
+        <div class="col-md-6">
+            <h1 class="mb-3 fs-1">Dashboard</h1>
+            <p class="lead fs-6">Analise os dados de telemetria do kart e melhore a sua performance.</p>
+        </div>
+        <!-- Card do botão de upload (mantido igual) -->
+        <div class="col-lg-4">
+            <div class="card shadow border rounded-3 h-100 ms-lg-3">
+                <div class="card-body p-0">
+                    <form id="upload-form" method="post" enctype="multipart/form-data" action="/Dashboard/Upload" class="text-end h-100">
+                        <div id="btn-upload" class="border border-secondary rounded-3 py-4 px-5 text-center h-100" style="cursor: pointer;">
+                            <div>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor" class="bi bi-upload mb-2" viewBox="0 0 16 16">
+                                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10.4a.5.5 0 0 1 1 0v2.6a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V10.4a.5.5 0 0 1 .5-.5z" />
+                                    <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3.5 3.5a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.854 5.354a.5.5 0 1 1-.708-.708l3.5-3.5z" />
+                                </svg>
+                            </div>
+                            <div class="fw-semibold">Carregar ficheiro .xrk</div>
+                            <small class="text-muted">Clique para escolher um ficheiro</small>
+                        </div>
+                        <input id="file-upload" type="file" name="arquivo" accept=".xrk" hidden />
+                        <div id="upload-result" class="mt-0 text-muted fw-bold"></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card shadow border rounded-3 p-2">
+                <div class="card-body">
+                    <h5 class="card-title">Número de Voltas</h5>
+                    <h3 class="card-text fw-bold">@ViewBag.numeroDeVoltas</h3>
+                    <small class="text-muted">+@ViewBag.numeroDeVoltasUltimoMes neste mês</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow border p-2">
+                <div class="card-body">
+                    <h5 class="card-title">Sessões Carregadas</h5>
+                    <h3 class="card-text fw-bold">@ViewBag.numeroDeSessoes</h3>
+                    <small class="text-muted">+@ViewBag.numeroDeSessoesUltimoMes neste mês</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow border p-2">
+                <div class="card-body">
+                    <h5 class="card-title">Pistas Carregadas</h5>
+                    <h3 class="card-text fw-bold">@ViewBag.numeroDePistasCarregadas</h3>
+                    <small class="text-muted">+@ViewBag.numeroDePistasCarregadasUltimoMes neste mês</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mt-3">
+        <div class="col-lg-8">
+            <div class="card shadow p-2" style="height: 100%;">
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <div class="table-responsive">
+                        <h5 class="card-title">Sessões Recentes</h5>
+                        <table class="table table-borderless align-middle mt-3">
+                            <thead class="text-muted border-bottom">
+                                <tr>
+                                    <th>
+                                        @Html.DisplayNameFor(model => model.NomePista)
+                                    </th>
+                                    <th>
+                                        @Html.DisplayNameFor(model => model.NomePiloto)
+                                    </th>
+                                    <th>
+                                        @Html.DisplayNameFor(model => model.NumeroVoltas)
+                                    </th>
+                                    <th>
+                                        @Html.DisplayNameFor(model => model.MelhorVolta)
+                                    </th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model)
+                                {
+                                    <tr>
+                                        <td class ="table-row-clickable"
+                                                data-lat="@item.CoordenadaLat.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                                data-long="@item.CoordenadaLong.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                                 style="cursor: pointer;">
+                                            @Html.DisplayFor(modelItem => item.NomePista)
+                                        </td>
+                                        <td>
+                                            @Html.DisplayFor(modelItem => item.NomePiloto)
+                                        </td>
+                                        <td>
+                                            @Html.DisplayFor(modelItem => item.NumeroVoltas)
+                                        </td>
+                                        <td>
+                                            @Html.DisplayFor(modelItem => item.MelhorVolta)
+                                        </td>
+                                        <td>
+                                            <a asp-controller="Analisador" asp-action="Index" asp-route-ficheiros="@item.NomeFicheiro">Detalhes</a> |
+                                            <a href="#" class="link-danger delete-sessao" data-id="@item.NomeFicheiro">Eliminar</a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    @if(Model.Count() >= 6)
+                    {
+                        <div class="d-flex align-content-center justify-content-center">
+                            <button type="button"
+                                    class="btn btn-outline-secondary"
+                                    onclick="location.href='@Url.Action("Index", "Sessao")'">
+                                Ver Mais
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow p-2" style="height: 100%;">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title mb-3">Pista</h5>
+                    <div id="map-preview" class="position-relative rounded shadow-sm" style="min-height: 220px;">
+                        <img id="placeholder-image"
+                             src="/images/ImageMap.jpg"
+                             alt="Nenhuma pista selecionada"
+                             class="rounded"
+                             style="object-fit: cover; z-index: 1; height: 100%; width: 100%;" />
+                        <div id="map-container" class="position-absolute inset-0 w-100 h-100 rounded"
+                             style="display:none; height: 500px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let map;
+
+        function initMap() {
+            const placeholder = document.getElementById("placeholder-image");
+            const mapContainer = document.getElementById("map-container");
+
+            map = new google.maps.Map(mapContainer, {
+                center: { lat: 41.6506, lng: -8.7993 },
+                zoom: 17,
+                mapTypeId: "satellite",
+                disableDefaultUI: true,
+                styles: [
+                    { featureType: "all", elementType: "labels", stylers: [{ visibility: "off" }] },
+                    { featureType: "road", stylers: [{ visibility: "off" }] },
+                    { featureType: "poi", stylers: [{ visibility: "off" }] },
+                    { featureType: "transit", stylers: [{ visibility: "off" }] },
+                    { featureType: "administrative", stylers: [{ visibility: "off" }] },
+                    { featureType: "water", elementType: "labels", stylers: [{ visibility: "off" }] }
+                ]
+            });
+
+            // Atualizar mapa ao clicar numa pista
+            document.querySelectorAll(".table-row-clickable").forEach(row => {
+                row.addEventListener("click", function (e) {
+                    if (e.target.tagName.toLowerCase() === 'a') return;
+
+                    const lat = parseFloat(this.dataset.lat);
+                    const lng = parseFloat(this.dataset.long);
+
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        map.setCenter({ lat: lat, lng: lng });
+                        map.setZoom(17);
+
+                        // Oculta a imagem assim que uma pista for clicada
+                        if (placeholder) {
+                            placeholder.style.display = "none";
+                        }
+                        if(mapContainer){
+                            mapContainer.style.display = "block";
+                        }
+                    }
+                });
+            });
+        }
+
+        const fileInput = document.getElementById("file-upload");
+        const resultBox = document.getElementById("upload-result");
+        const uploadBtn = document.getElementById("btn-upload");
+
+        uploadBtn.addEventListener("click", () => {
+            fileInput.click(); // abre o seletor
+        });
+
+        fileInput.addEventListener("change", async function () {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            const check = await fetch(`/Dashboard/CheckFileExists?fileName=${encodeURIComponent(file.name)}`);
+            const result = await check.json();
+
+            let proceed = true;
+
+            if (result.exists) {
+                proceed = confirm(`Já existe um ficheiro com o nome "${file.name}". Deseja substituí-lo?`);
+            }
+
+            if (proceed) {
+                const formData = new FormData();
+                formData.append("arquivo", file);
+
+                const upload = await fetch("/Dashboard/Upload", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const responseText = await upload.text();
+                resultBox.textContent = responseText;
+                location.reload();
+            } else {
+                resultBox.textContent = "Upload cancelado pelo utilizador.";
+            }
+        });
+
+        document.querySelectorAll(".delete-sessao").forEach(btn => {
+             btn.addEventListener("click", async function (e) {
+                e.preventDefault();
+
+                const id = this.dataset.id;
+                if (!id) return;
+
+                const confirmacao = confirm(`Tem a certeza que deseja eliminar o ficheiro "${id}"?`);
+                if (!confirmacao) return;
+
+                const response = await fetch("/Dashboard/Delete", {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ nomeFicheiro: id })
+                });
+
+                if (response.ok) {
+                    alert("Sessão eliminada com sucesso.");
+                    location.reload(); // ou remove a linha da tabela dinamicamente
+                } else {
+                    const error = await response.text();
+                    alert("Erro ao eliminar: " + error);
+                }
+            });
+        });
+    </script>
+}
+

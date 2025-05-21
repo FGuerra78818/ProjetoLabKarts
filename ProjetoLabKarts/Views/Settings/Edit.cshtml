@@ -1,0 +1,72 @@
+﻿@model ProjetoLabKarts.Models.AppSettings
+@using ProjetoLabKarts.Services
+
+@{
+    ViewData["Title"] = "Configurações - " + Model.ViewName;
+    var selectedCols = Model.SelectedColumns?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
+}
+
+<div class="container py-4">
+    <!-- Cabeçalho com título e botão de voltar -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h1 class="mb-1 fs-1">Configurações</h1>
+            <p class="lead fs-6 mb-0">@Model.ViewName</p>
+        </div>
+        <button type="button"
+                onclick="window.history.back();"
+                class="btn btn-outline-secondary">
+            ← Voltar
+        </button>
+    </div>
+
+    <!-- Card principal -->
+    <div class="card shadow border rounded-4">
+        <div class="card-body p-4">
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success mb-4">@TempData["Success"]</div>
+            }
+
+            <form asp-action="Edit" method="post">
+                <input type="hidden" name="viewName" value="@Model.ViewName" />
+
+                <!-- Linhas por página -->
+                <div class="mb-4">
+                    <label asp-for="RowsPerPage" class="form-label fw-semibold">Linhas por página</label>
+                    <input asp-for="RowsPerPage" class="form-control" />
+                    <span asp-validation-for="RowsPerPage" class="text-danger"></span>
+                </div>
+
+                <!-- Colunas disponíveis -->
+                <fieldset class="mb-4">
+                    <legend class="fs-6 fw-semibold mb-3">Colunas Disponíveis</legend>
+                    <div class="row">
+                        @foreach (var col in AppSettingsService.DefaultColumnsPerView
+                        .SelectMany(kvp => kvp.Value)
+                        .Distinct())
+                        {
+                            var isChecked = selectedCols.Contains(col);
+                            <div class="col-6 col-md-4 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           name="columns"
+                                           value="@col"
+                                           id="col-@col"
+                                    @(isChecked ? "checked" : "") />
+                                    <label class="form-check-label" for="col-@col">@col</label>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </fieldset>
+
+                <!-- Botão de guardar -->
+                <div class="text-end">
+                    <button type="submit" class="btn btn-primary px-4">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

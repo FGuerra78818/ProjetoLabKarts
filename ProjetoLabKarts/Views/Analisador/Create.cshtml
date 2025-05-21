@@ -1,0 +1,78 @@
+﻿@model ProjetoLabKarts.Models.SessaoKart
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>Create</h1>
+
+<h4>SessaoKart</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="NomeFicheiro" class="control-label"></label>
+                <input asp-for="NomeFicheiro" class="form-control" />
+                <span asp-validation-for="NomeFicheiro" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="NomePiloto" class="control-label"></label>
+                <input asp-for="NomePiloto" class="form-control" />
+                <span asp-validation-for="NomePiloto" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="NomePista" class="control-label"></label>
+                <input asp-for="NomePista" class="form-control" />
+                <span asp-validation-for="NomePista" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="NumeroVoltas" class="control-label"></label>
+                <input asp-for="NumeroVoltas" class="form-control" />
+                <span asp-validation-for="NumeroVoltas" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="MelhorVolta" class="control-label"></label>
+                <input asp-for="MelhorVolta" class="form-control" />
+                <span asp-validation-for="MelhorVolta" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="DataHora" class="control-label"></label>
+                <input asp-for="DataHora" class="form-control" />
+                <span asp-validation-for="DataHora" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="CoordenadaLat" class="control-label"></label>
+                <input asp-for="CoordenadaLat" class="form-control" />
+                <span asp-validation-for="CoordenadaLat" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="CoordenadaLong" class="control-label"></label>
+                <input asp-for="CoordenadaLong" class="form-control" />
+                <span asp-validation-for="CoordenadaLong" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="VelocidadeMax" class="control-label"></label>
+                <input asp-for="VelocidadeMax" class="form-control" />
+                <span asp-validation-for="VelocidadeMax" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="DataHoraInsercao" class="control-label"></label>
+                <input asp-for="DataHoraInsercao" class="form-control" />
+                <span asp-validation-for="DataHoraInsercao" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
