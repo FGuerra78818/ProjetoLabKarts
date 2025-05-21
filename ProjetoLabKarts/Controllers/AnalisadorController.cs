@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -84,13 +85,26 @@ namespace ProjetoLabKarts.Controllers
                                - ordenadoPorVelocidade[1].VelocidadeMax;
             }
 
-            // 
+            var canais = new List<ChannelData>();
             var channelsByFile = new Dictionary<string, List<ChannelData>>();
             foreach (var sessao in sessoes)
             {
                 var fullPath = Path.Combine(_env.WebRootPath, "Uploads", sessao.NomeFicheiro);
-                var canais = XRKReader.LoadAllChannelData(fullPath);
+                canais = XRKReader.LoadAllChannelData(fullPath);
                 channelsByFile[sessao.NomeFicheiro] = canais;
+                Console.WriteLine("Canais: " + canais.ToString());
+                Console.WriteLine("channelsByFile: " + channelsByFile[sessao.NomeFicheiro]);
+            }
+
+            foreach (var ch in canais)
+            {
+                Console.WriteLine($"=== Canal: {ch.Name} ({ch.Units}) ===");
+                int max = Math.Min(10, ch.Times.Length);
+                for (int i = 0; i < max; i++)
+                {
+                    Console.WriteLine($"  [{i}] Time = {ch.Times[i]:F3}, Value = {ch.Values[i]:F3}");
+                }
+                Console.WriteLine(); // linha vazia entre canais
             }
 
             // Passa tudo para a View
@@ -100,6 +114,16 @@ namespace ProjetoLabKarts.Controllers
             ViewBag.velocidadeMaxima = velocidadeMax;
             ViewBag.diferencaVelocidadeMaximaDosOutrosFicheiros = diffVelocidade.ToString("F2");
             ViewBag.ChannelsByFile = channelsByFile;
+            ViewBag.Tracks = new List<string>();
+
+            string nomePista = sessoes.Select(s => s.NomePista).First();
+
+            List<SessaoKart> sessoesPista = await _context.SessoesKart
+                .Where(sPista => sPista.NomePista.Contains(nomePista))
+                .Where(s => !nomes.Contains(s.NomeFicheiro))
+                .ToListAsync();
+
+            ViewBag.AllSessions = sessoesPista;
 
             return View(sessoes);
         }

@@ -1,5 +1,7 @@
 ﻿@model IEnumerable<ProjetoLabKarts.Models.SessaoKart>
 @using ProjetoLabKarts.Interop
+@using System.Globalization
+@using Newtonsoft.Json
 
 @{
     ViewData["Title"] = "Análise de Sessões";
@@ -9,6 +11,7 @@
 
 <head>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <style>
         /* Painel lateral esquerdo 30% */
         .side-panel {
@@ -67,6 +70,37 @@
             width: 180px;
             height: 180px;
         }
+
+        .progress-vertical {
+            width: 1.5rem;
+            height: 200px; /* altura total da barra */
+            background: #e9ecef;
+            border-radius: 0.25rem;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column-reverse; /* o “fundo” fica em baixo */
+            margin: 0 auto;
+        }
+
+            .progress-vertical .progress-bar {
+                width: 100%;
+                height: 0%; /* vai crescer em altura */
+                transition: height .2s ease;
+            }
+
+        .gauge-container {
+            text-align: center;
+        }
+
+            .gauge-container .max-label {
+                font-size: .8rem;
+                margin-bottom: .25rem;
+            }
+
+            .gauge-container .current-label {
+                font-size: .9rem;
+                margin-top: .25rem;
+            }
     </style>
 </head>
 
@@ -126,7 +160,7 @@
     </div>
 
     <div class="row">
-        <!-- Coluna esquerda com tabelas -->
+        <!-- SidePanel com tabelas -->
         <div class="col-lg-5">
 
             @if (!Model.Any())
@@ -142,6 +176,11 @@
                     </div>
 
                     <div class="panel-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5>Sessões Carregadas</h5>
+                            <button id="btnAddSession" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#addSessionModal">+</button>
+                        </div>
+
                         <!-- 1ª Tabela clicável -->
                         <table class="table table-borderless mb-4" id="sessionTable">
                             <tbody>
@@ -155,13 +194,18 @@
                                         <td class="text-end text-muted" style="white-space: nowrap;">
                                             @s.DataHoraInsercao.ToString("yyyy, MMM dd h:mm tt", System.Globalization.CultureInfo.InvariantCulture)
                                         </td>
+                                        <td class="text-end">
+                                            <button type="button" class="btn btn-sm btn-outline-danger btn-remove" title="Remover">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </td>
                                     </tr>
                                 }
                             </tbody>
                         </table>
 
                         <!-- 2ª Tabela de detalhes -->
-                        <h4 class="fw-bold mb-3">Detalhe dos Canais de Telemetria</h4>
+                        <h5>Detalhe dos Canais de Telemetria</h5>
                         <div id="channelDetails">
                             @foreach (var s in Model)
                             {
@@ -194,21 +238,176 @@
                                 </div>
                             }
                         </div>
+
+                        <!-- Modal de Adicionar Sessão sem filtragem -->
+                        <div class="modal fade" id="addSessionModal" tabindex="-1" aria-labelledby="addSessionLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 id="addSessionLabel" class="modal-title">Adicionar Sessões</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="list-group">
+                                            @foreach (var s in ViewBag.AllSessions as List<SessaoKart>)
+                                            {
+                                                <label class="list-group-item">
+                                                    <input type="checkbox" class="form-check-input me-1 session-checkbox" value="@s.NomeFicheiro" />
+                                                    @s.NomeFicheiro
+                                                </label>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="button" id="confirmAddSessions" class="btn btn-primary">Adicionar</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             }
         </div>
 
-        <!-- Coluna direita vazia para espaço livre -->
-        <div class="col-lg-4">
-            <!-- Espaço livre -->
+        <div id="plotArea" style="width:100%; height:400px;"></div>
+        <div id="gauges" class="d-flex justify-content-around mt-4">
+            <!-- RPM -->
+            <div class="gauge-container">
+                <div class="max-label" id="maxRPM">—</div>
+                <div class="progress-vertical">
+                    <div id="barRPM" class="progress-bar bg-primary"></div>
+                </div>
+                <div class="current-label" id="rpmValue">0</div>
+            </div>
+
+            <!-- GPS LatAcc -->
+            <div class="gauge-container">
+                <div class="max-label" id="maxLatAcc">—</div>
+                <div class="progress-vertical">
+                    <div id="barLatAcc" class="progress-bar bg-success"></div>
+                </div>
+                <div class="current-label" id="latAccValue">0</div>
+            </div>
+
+            <!-- GPS LonAcc -->
+            <div class="gauge-container">
+                <div class="max-label" id="maxLonAcc">—</div>
+                <div class="progress-vertical">
+                    <div id="barLonAcc" class="progress-bar bg-warning"></div>
+                </div>
+                <div class="current-label" id="lonAccValue">0</div>
+            </div>
+
+            <!-- Water Temp -->
+            <div class="gauge-container">
+                <div class="max-label" id="maxTemp">—</div>
+                <div class="progress-vertical">
+                    <div id="barTemp" class="progress-bar bg-info"></div>
+                </div>
+                <div class="current-label" id="tempValue">0</div>
+            </div>
         </div>
     </div>
 </div>
 
+@{
+    // Serializar dados para JS usando JSON
+    var jsData = channelsByFile.ToDictionary(
+        kv => kv.Key,
+        kv => kv.Value.ToDictionary(
+            ch => ch.Name,
+            ch => new { times = ch.Times, values = ch.Values }
+        )
+    );
+}
+
 @section Scripts {
     <script>
-            const btnShow   = document.getElementById('btnShowDetails');
+        // 1) Dados vindos do C#
+        const dataBySession = @Html.Raw(JsonConvert.SerializeObject(jsData));
+        let currentSession    = '@firstSession';
+
+        // 2) Quais os canais que queremos nas barras e no gráfico
+        const barChannels  = ['RPM','GPS LatAcc','GPS LonAcc','Water Temp'];
+        // Se quiseres incluir Speed no gráfico, faz um array separado:
+        const plotChannels = ['GPS Speed', ...barChannels];
+
+        // Para mapear nomes a sufixos de ID
+        const idKey = {
+          'RPM':       { bar:'RPM',      max:'maxRPM',    curr:'rpmValue'    },
+          'GPS LatAcc':{ bar:'LatAcc',   max:'maxLatAcc', curr:'latAccValue' },
+          'GPS LonAcc':{ bar:'LonAcc',   max:'maxLonAcc', curr:'lonAccValue' },
+          'Water Temp':{ bar:'Temp',     max:'maxTemp',   curr:'tempValue'   }
+        };
+
+        let maxValues = {};
+
+        // 3) Calcula máximos para normalizar a largura das barras
+        function calculaMaximos() {
+            const sess = dataBySession[currentSession] || {};
+            barChannels.forEach(ch => {
+                const vals = sess[ch]?.values || [];
+                const m = vals.length ? Math.max(...vals) : 0;
+                maxValues[ch] = m;
+                // Escreve o valor máximo no topo
+                document.getElementById(idKey[ch].max).textContent = m.toFixed(2);
+            });
+        }
+
+        function updateBars(idx) {
+            const sess = dataBySession[currentSession] || {};
+            barChannels.forEach(ch => {
+                const key    = idKey[ch].bar;
+                const val    = sess[ch]?.values[idx] ?? 0;
+                const pct    = maxValues[ch] ? (val / maxValues[ch] * 100).toFixed(1) : 0;
+                // Ajusta a altura da div
+                document.getElementById('bar' + key).style.height = pct + '%';
+                // Atualiza rótulo de valor actual
+                document.getElementById(idKey[ch].curr).textContent = val.toFixed(2);
+            });
+        }
+
+        // 5) Função que desenha todos os canais em grelha
+        function plotAll(plotDiv) {
+          const sess   = dataBySession[currentSession] || {};
+          const traces = [];
+
+          plotChannels.forEach((ch, i) => {
+            if (!sess[ch]) return;
+            traces.push({
+              x: sess[ch].times,
+              y: sess[ch].values,
+              name: ch,
+              xaxis: 'x' + (i+1),
+              yaxis: 'y' + (i+1),
+              mode: 'lines'
+            });
+          });
+
+          // configurações da grelha + spike line
+          const layout = {
+            hovermode: 'x unified',
+            grid: { rows: plotChannels.length, columns: 1, pattern: 'independent' },
+            margin: { t: 20 }
+          };
+
+          plotChannels.forEach((ch, i) => {
+            layout['xaxis' + (i+1)] = {
+              title: 'Distância',
+              showspikes: true,
+              spikemode: 'across',
+              spikesnap: 'cursor',
+              spikecolor: '#888'
+            };
+            layout['yaxis' + (i+1)] = { title: ch };
+          });
+
+          Plotly.newPlot(plotDiv, traces, layout);
+        }
+
+
+        const btnShow   = document.getElementById('btnShowDetails');
         const btnHide   = document.getElementById('btnHideDetails');
         const sidePanel = document.getElementById('sidePanel');
 
@@ -218,6 +417,45 @@
 
         btnHide.addEventListener('click', () => {
           sidePanel.classList.remove('open');
+        });
+
+        // Fecha panel ao clicar fora
+        document.addEventListener('click', (e) => {
+            if (sidePanel.classList.contains('open') && !sidePanel.contains(e.target) && e.target !== btnShow) {
+                sidePanel.classList.remove('open');
+            }
+        });
+
+        document.getElementById('confirmAddSessions').addEventListener('click', () => {
+            const selecionadas = Array.from(document.querySelectorAll('.session-checkbox:checked'))
+                                     .map(cb => cb.value);
+            if (!selecionadas.length) {
+                alert('Seleciona pelo menos uma sessão.');
+                return;
+            }
+            // Merge com sessões já existentes na querystring
+            const params = new URLSearchParams(window.location.search);
+            const existentes = params.get('ficheiros')
+                               ? params.get('ficheiros').split(',')
+                               : [];
+            const combined = Array.from(new Set([...existentes, ...selecionadas]));
+            params.set('ficheiros', combined.join(','));
+            window.location.href = `${window.location.pathname}?${params}`;
+        });
+
+        // Remove sessão ao clicar no lixo
+        document.getElementById('sessionTable').addEventListener('click', e => {
+            if (e.target.closest('.btn-remove')) {
+                e.stopPropagation();
+                const row = e.target.closest('tr');
+                const sess = row.dataset.session;
+                const params = new URLSearchParams(window.location.search);
+                const list = params.get('ficheiros') ? params.get('ficheiros').split(',') : [];
+                const updated = list.filter(f => f !== sess);
+                params.set('ficheiros', updated.join(','));
+                // recarrega sem essa sessão
+                window.location.href = `${window.location.pathname}?${params}`;
+            }
         });
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -236,6 +474,19 @@
                         div.classList.toggle('d-none', div.dataset.session !== sessionId);
                     });
                 });
+            });
+
+            const plotArea = document.getElementById('plotArea');
+            if (!plotArea) {
+              console.error('#plotArea não encontrado no DOM');
+              return;
+            }
+
+            calculaMaximos();
+            plotAll(plotArea);
+
+            plotArea.on('plotly_hover', data => {
+                updateBars(data.points[0].pointIndex);
             });
         });
     </script>
