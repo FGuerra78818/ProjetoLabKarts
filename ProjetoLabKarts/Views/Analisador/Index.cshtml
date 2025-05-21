@@ -86,6 +86,10 @@
                 width: 100%;
                 height: 0%; /* vai crescer em altura */
                 transition: height .2s ease;
+                position: relative;
+                display: flex;
+                align-items: flex-end;
+                justify-content: center;
             }
 
         .gauge-container {
@@ -101,6 +105,14 @@
                 font-size: .9rem;
                 margin-top: .25rem;
             }
+
+        .bar-label {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: .75rem;
+            color: #fff; /* ou outra cor que destaque */
+        }
     </style>
 </head>
 
@@ -270,13 +282,14 @@
             }
         </div>
 
-        <div id="plotArea" style="width:100%; height:800px;"></div>
+        <div id="plotArea" style="width:100%; height:600px;"></div>
         <div id="gauges" class="d-flex justify-content-around mt-4">
             <!-- RPM -->
             <div class="gauge-container">
                 <div class="max-label" id="maxRPM">—</div>
                 <div class="progress-vertical">
                     <div id="barRPM" class="progress-bar bg-primary"></div>
+                    <span id="labelRPM" class="bar-label">0</span>
                 </div>
                 <div class="current-label" id="rpmValue">0</div>
             </div>
@@ -286,6 +299,7 @@
                 <div class="max-label" id="maxLatAcc">—</div>
                 <div class="progress-vertical">
                     <div id="barLatAcc" class="progress-bar bg-success"></div>
+                    <span id="labelLatAcc" class="bar-label">0</span>
                 </div>
                 <div class="current-label" id="latAccValue">0</div>
             </div>
@@ -295,6 +309,7 @@
                 <div class="max-label" id="maxLonAcc">—</div>
                 <div class="progress-vertical">
                     <div id="barLonAcc" class="progress-bar bg-warning"></div>
+                    <span id="labelLonAcc" class="bar-label">0</span>
                 </div>
                 <div class="current-label" id="lonAccValue">0</div>
             </div>
@@ -304,6 +319,7 @@
                 <div class="max-label" id="maxTemp">—</div>
                 <div class="progress-vertical">
                     <div id="barTemp" class="progress-bar bg-info"></div>
+                    <span id="labelTemp" class="bar-label">0</span>
                 </div>
                 <div class="current-label" id="tempValue">0</div>
             </div>
@@ -328,10 +344,10 @@
         const dataBySession = @Html.Raw(JsonConvert.SerializeObject(jsData));
         let currentSession    = '@firstSession';
 
-        // 2) Quais os canais que queremos nas barras e no gráfico
+        // 2) Quais os canais que queremos nas barras
         const barChannels  = ['RPM','GPS LatAcc','GPS LonAcc','Water Temp'];
         // Se quiseres incluir Speed no gráfico, faz um array separado:
-        const plotChannels = ['GPS Speed', ...barChannels];
+        const plotChannels = ['GPS Speed', 'RPM'];
 
         // Para mapear nomes a sufixos de ID
         const idKey = {
@@ -406,20 +422,27 @@
         }
 
         function updateBars(ev) {
-          const sess   = dataBySession[currentSession] || {};
-          const timeX  = ev.points[0].x;        // este é o timestamp
+          const sess  = dataBySession[currentSession] || {};
+          const timeX = ev.points[0].x;
           barChannels.forEach(ch => {
-            const { bar: key, curr: currId } = idKey[ch];
+            const { bar: key } = idKey[ch];
             const times  = sess[ch]?.times  || [];
             const values = sess[ch]?.values || [];
+            // encontra índice por Time
             let idx = bisectLeft(times, timeX);
             if (idx >= values.length) idx = values.length - 1;
             const val = values[idx] ?? 0;
             const pct = maxValues[ch] ? val / maxValues[ch] * 100 : 0;
-            document.getElementById('bar'+key).style.height = pct + '%';
-            document.getElementById(currId).textContent     = val.toFixed(2);
+
+            // altura da barra
+            const barEl = document.getElementById('bar'+key);
+            barEl.style.height = pct + '%';
+
+            // actualiza texto dentro da barra
+            document.getElementById('label'+key).textContent = val.toFixed(2);
           });
         }
+
 
         function normalizeTimesToMs(sessionData) {
           const secChannels = ['RPM','Water Temp'];
