@@ -7,18 +7,87 @@
     var firstSession = Model.FirstOrDefault()?.NomeFicheiro;
 }
 
-<div class="container py-4">
+<head>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        /* Painel lateral esquerdo 30% */
+        .side-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 30%; /* ocupa 30% da largura */
+            height: 100%;
+            background: #fff; /* ou o que te apetecer */
+            box-shadow: 2px 0 8px rgba(0,0,0,0.3);
+            z-index: 9999;
+            overflow-y: auto;
+            transform: translateX(-100%);
+            transition: transform .3s ease-in-out;
+        }
+
+            .side-panel.open {
+                transform: translateX(0);
+            }
+
+            .side-panel .panel-header {
+                padding: 1rem;
+                border-bottom: 1px solid #ddd;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .side-panel .panel-body {
+                padding: 1rem;
+            }
+
+        .d-none {
+            display: none !important;
+        }
+
+        .chart-row {
+            display: flex;
+            justify-content: space-around;
+            margin: 10px 0;
+        }
+
+        .chart {
+            background: #222;
+            padding: 5px;
+            border-radius: 4px;
+        }
+
+        #gauges {
+            display: flex;
+            justify-content: space-around;
+            margin: 10px;
+        }
+
+        .gauge {
+            width: 180px;
+            height: 180px;
+        }
+    </style>
+</head>
+
+<div class="container py-4 modal-fullscreen">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div class="d-flex flex-column">
             <h2 class="mb-0">Sessões Selecionadas para Análise</h2>
             <p class="lead fs-6 mb-0">Análise da telemetria das sessões</p>
         </div>
 
-        <button type="button"
-                onclick="window.history.back();"
-                class="btn btn-outline-secondary">
-            ← Voltar
-        </button>
+        <div class="d-flex align-items-center gap-2">
+            <button id="btnShowDetails" class="btn btn-primary">
+                Ver Detalhes dos Canais
+            </button>
+
+            <button type="button"
+                    onclick="window.history.back();"
+                    class="btn btn-outline-secondary">
+                ← Voltar
+            </button>
+        </div>
     </div>
 
 
@@ -56,8 +125,6 @@
         </div>
     </div>
 
-
-
     <div class="row">
         <!-- Coluna esquerda com tabelas -->
         <div class="col-lg-5">
@@ -68,57 +135,66 @@
             }
             else
             {
-                <!-- 1ª Tabela clicável -->
-                <table class="table table-borderless mb-4" id="sessionTable">
-                    <tbody>
-                        @foreach (var s in Model)
-                        {
-                            var isActive = s.NomeFicheiro == firstSession ? "table-active" : "";
-                            <tr class="clickable-row @isActive" data-session="@s.NomeFicheiro" style="cursor:pointer">
-                                <td class="fw-semibold text-muted">
-                                    @s.MelhorVolta - @s.NumeroMelhorVolta
-                                </td>
-                                <td class="text-end text-muted" style="white-space: nowrap;">
-                                    @s.DataHoraInsercao.ToString("yyyy, MMM dd h:mm tt", System.Globalization.CultureInfo.InvariantCulture)
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+                <div id="sidePanel" class="side-panel">
+                    <div class="panel-header">
+                        <h5>Detalhe dos Canais</h5>
+                        <button id="btnHideDetails" class="btn-close" aria-label="Fechar"></button>
+                    </div>
 
-                <!-- 2ª Tabela de detalhes -->
-                <h4 class="fw-bold mb-3">Detalhe dos Canais de Telemetria</h4>
-                <div id="channelDetails">
-                    @foreach (var s in Model)
-                    {
-                        var isVisible = s.NomeFicheiro == firstSession ? "" : "d-none";
-                        <div class="channel-details @isVisible" data-session="@s.NomeFicheiro">
-                            <div class="table-responsive mb-4">
-                                <table class="table table-borderless align-middle">
-                                    <thead class="text-muted border-bottom">
-                                        <tr>
-                                            <th>Canal</th>
-                                            <th>Unidades</th>
-                                            <th># Pontos</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @{
-                                            var canais = channelsByFile[s.NomeFicheiro];
-                                        }
-                                        @foreach (var ch in canais)
-                                        {
-                                            <tr>
-                                                <td>@ch.Name</td>
-                                                <td>@ch.Units</td>
-                                                <td>@ch.Values.Length</td>
-                                            </tr>
-                                        }
-                                    </tbody>
-                                </table>
-                            </div>
+                    <div class="panel-body">
+                        <!-- 1ª Tabela clicável -->
+                        <table class="table table-borderless mb-4" id="sessionTable">
+                            <tbody>
+                                @foreach (var s in Model)
+                                {
+                                    var isActive = s.NomeFicheiro == firstSession ? "table-active" : "";
+                                    <tr class="clickable-row @isActive" data-session="@s.NomeFicheiro" style="cursor:pointer">
+                                        <td class="fw-semibold text-muted">
+                                            @s.MelhorVolta - @s.NumeroMelhorVolta
+                                        </td>
+                                        <td class="text-end text-muted" style="white-space: nowrap;">
+                                            @s.DataHoraInsercao.ToString("yyyy, MMM dd h:mm tt", System.Globalization.CultureInfo.InvariantCulture)
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+
+                        <!-- 2ª Tabela de detalhes -->
+                        <h4 class="fw-bold mb-3">Detalhe dos Canais de Telemetria</h4>
+                        <div id="channelDetails">
+                            @foreach (var s in Model)
+                            {
+                                var isVisible = s.NomeFicheiro == firstSession ? "" : "d-none";
+                                <div class="channel-details @isVisible" data-session="@s.NomeFicheiro">
+                                    <div class="table-responsive mb-4">
+                                        <table class="table table-borderless align-middle">
+                                            <thead class="text-muted border-bottom">
+                                                <tr>
+                                                    <th>Canal</th>
+                                                    <th>Unidades</th>
+                                                    <th># Pontos</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @{
+                                                    var canais = channelsByFile[s.NomeFicheiro];
+                                                }
+                                                @foreach (var ch in canais)
+                                                {
+                                                    <tr>
+                                                        <td>@ch.Name</td>
+                                                        <td>@ch.Units</td>
+                                                        <td>@ch.Values.Length</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            }
                         </div>
-                    }
+                    </div>
                 </div>
             }
         </div>
@@ -132,6 +208,18 @@
 
 @section Scripts {
     <script>
+            const btnShow   = document.getElementById('btnShowDetails');
+        const btnHide   = document.getElementById('btnHideDetails');
+        const sidePanel = document.getElementById('sidePanel');
+
+        btnShow.addEventListener('click', () => {
+          sidePanel.classList.add('open');
+        });
+
+        btnHide.addEventListener('click', () => {
+          sidePanel.classList.remove('open');
+        });
+
         document.addEventListener('DOMContentLoaded', () => {
             const rows    = document.querySelectorAll('#sessionTable .clickable-row');
             const details = document.querySelectorAll('.channel-details');
