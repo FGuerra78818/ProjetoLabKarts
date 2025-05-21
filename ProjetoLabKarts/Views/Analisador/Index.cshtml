@@ -96,7 +96,7 @@
             text-align: center;
         }
 
-            .gauge-container .max-label {
+            .gauge-container .max-label .min-label {
                 font-size: .8rem;
                 margin-bottom: .25rem;
             }
@@ -108,10 +108,12 @@
 
         .bar-label {
             position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
+            bottom: 0.25rem; /* fixa junto ao fundo da barra */
+            left: 50%; /* centra horizontalmente */
+            transform: translateX(-50%);
             font-size: .75rem;
-            color: #fff; /* ou outra cor que destaque */
+            color: #fff;
+            pointer-events: none; /* para que não interfira no hover */
         }
     </style>
 </head>
@@ -291,6 +293,7 @@
                     <div id="barRPM" class="progress-bar bg-primary"></div>
                     <span id="labelRPM" class="bar-label">0</span>
                 </div>
+                <div class="min-label" id="minRPM">-</div>
                 <div class="current-label" id="rpmValue">0</div>
             </div>
 
@@ -301,6 +304,7 @@
                     <div id="barLatAcc" class="progress-bar bg-success"></div>
                     <span id="labelLatAcc" class="bar-label">0</span>
                 </div>
+                <div class="min-label" id="minLatAcc">-</div>
                 <div class="current-label" id="latAccValue">0</div>
             </div>
 
@@ -311,6 +315,7 @@
                     <div id="barLonAcc" class="progress-bar bg-warning"></div>
                     <span id="labelLonAcc" class="bar-label">0</span>
                 </div>
+                <div class="min-label" id="minLonAcc">-</div>
                 <div class="current-label" id="lonAccValue">0</div>
             </div>
 
@@ -321,6 +326,7 @@
                     <div id="barTemp" class="progress-bar bg-info"></div>
                     <span id="labelTemp" class="bar-label">0</span>
                 </div>
+                <div class="min-label" id="minTemp">-</div>
                 <div class="current-label" id="tempValue">0</div>
             </div>
         </div>
@@ -345,6 +351,7 @@
         const dataBySession = @Html.Raw(JsonConvert.SerializeObject(jsData));
         const lapsBySession = @Html.Raw(JsonConvert.SerializeObject(lapsByFile));
         let currentSession    = '@firstSession';
+        let maxValues = {}, minValues = {};
 
         // 2) Quais os canais que queremos nas barras
         const barChannels  = ['RPM','GPS LatAcc','GPS LonAcc','Water Temp'];
@@ -353,13 +360,11 @@
 
         // Para mapear nomes a sufixos de ID
         const idKey = {
-            'RPM':       { bar:'RPM',      max:'maxRPM',    curr:'rpmValue'    },
-            'GPS LatAcc':{ bar:'LatAcc',   max:'maxLatAcc', curr:'latAccValue' },
-            'GPS LonAcc':{ bar:'LonAcc',   max:'maxLonAcc', curr:'lonAccValue' },
-            'Water Temp':{ bar:'Temp',     max:'maxTemp',   curr:'tempValue'   }
+            'RPM':        { bar:'RPM',    max:'maxRPM',    min:'minRPM',    curr:'rpmValue'    },
+            'GPS LatAcc': { bar:'LatAcc', max:'maxLatAcc', min:'minLatAcc', curr:'latAccValue' },
+            'GPS LonAcc': { bar:'LonAcc', max:'maxLonAcc', min:'minLonAcc', curr:'lonAccValue' },
+            'Water Temp': { bar:'Temp',   max:'maxTemp',   min:'minTemp',   curr:'tempValue'   }
         };
-
-        let maxValues = {};
 
         // 3) Calcula máximos para normalizar a largura das barras
         function calculaMaximos() {
@@ -367,9 +372,12 @@
             barChannels.forEach(ch => {
                 const vals = sess[ch]?.values || [];
                 const m = vals.length ? Math.max(...vals) : 0;
+                const n = vals.length ? Math.min(...vals) : 0;
                 maxValues[ch] = m;
+                minValues[ch] = n;
                 // Escreve o valor máximo no topo
                 document.getElementById(idKey[ch].max).textContent = m.toFixed(2);
+                document.getElementById(idKey[ch].min).textContent = n.toFixed(2);
             });
         }
 
@@ -378,6 +386,10 @@
             const traces = [];
             const n      = plotChannels.length;
             const height = 1/n;
+
+            const allTimes = sess[ plotChannels[0] ]?.times || [];
+            const t0 = 0;
+            const t1 = Math.max(...allTimes);
 
             // (calcula xMin/xMax dinamicamente se quiseres, mas com rangeslider não é obrigatório)
             const layout = {
@@ -403,6 +415,7 @@
                     spikemode:      'across',
                     spikesnap:      'cursor',
                     spikecolor:     '#888',
+                    range:          [t0, t1],
 
                     // **permitir** interação neste eixo
                     fixedrange:     false,
@@ -411,6 +424,7 @@
                     ...(i===0 && {
                         rangeslider: {
                         visible:   true,
+                        range:     [t0, t1],
                         thickness: 0.1    // 10% da altura do plot
                         },
                         rangeselector: {     // botões opcionais
@@ -498,6 +512,15 @@
                     // volta só às linhas de volta
                     Plotly.relayout(gd, { shapes: lapShapes });
                 });
+
+                gd.on('plotly_relayout', e => {
+                    if (e['xaxis.range[0]'] || e['xaxis.range[1]']) {
+                        Plotly.relayout(gd, {
+                            'xaxis.range': [t0, t1],
+                            'xaxis.rangeslider.range': [t0, t1]
+                        });
+                    }
+                });
             });
         }
 
@@ -517,21 +540,18 @@
             const sess  = dataBySession[currentSession] || {};
             const timeX = ev.points[0].x;
             barChannels.forEach(ch => {
-                const { bar: key } = idKey[ch];
+                const { bar:key, curr:lbl } = idKey[ch];
                 const times  = sess[ch]?.times  || [];
                 const values = sess[ch]?.values || [];
-                // encontra índice por Time
                 let idx = bisectLeft(times, timeX);
                 if (idx >= values.length) idx = values.length - 1;
                 const val = values[idx] ?? 0;
-                const pct = maxValues[ch] ? val / maxValues[ch] * 100 : 0;
 
-                // altura da barra
-                const barEl = document.getElementById('bar'+key);
-                barEl.style.height = pct + '%';
-
-                // actualiza texto dentro da barra
-                document.getElementById('label'+key).textContent = val.toFixed(2);
+                // calcula percentagem entre min e max
+                const min = minValues[ch], max = maxValues[ch];
+                const pct = max!==min ? (val - min) / (max - min) * 100 : 0;
+                document.getElementById('bar'+key).style.height = pct + '%';
+                document.getElementById(lbl).textContent = val.toFixed(2);
             });
         }
 
