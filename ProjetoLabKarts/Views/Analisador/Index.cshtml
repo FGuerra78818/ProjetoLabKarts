@@ -373,41 +373,100 @@
 
 
         // 5) Função que desenha todos os canais em grelha
-        function plotAll(plotDiv) {
-          const sess    = dataBySession[currentSession] || {};
-          const traces  = [];
+                function plotAll(plotDiv) {
+          const sess   = dataBySession[currentSession] || {};
+          const traces = [];
+
+          // 1) Cria cada trace apontando para x/y ou x2/y2
           plotChannels.forEach((ch,i) => {
             if (!sess[ch]) return;
-            traces.push({
-              x: sess[ch].times,      // aqui já é Time
+            const t = {
+              x: sess[ch].times,
               y: sess[ch].values,
               name: ch,
-              xaxis: 'x'+(i+1),
-              yaxis: 'y'+(i+1),
               mode: 'lines'
-            });
+            };
+            if (i === 0) {
+              t.xaxis = 'x';
+              t.yaxis = 'y';
+            } else if (i === 1) {
+              t.xaxis = 'x2';
+              t.yaxis = 'y2';
+            }
+            traces.push(t);
           });
 
+          // 2) Layout com domínio manual
           const layout = {
             hovermode: 'x unified',
-            grid: { rows: plotChannels.length, columns: 1, pattern: 'independent' },
-            margin: { t:20 }
+            margin: { t:20 },
+
+            // eixo de cima
+            xaxis: {
+              domain:      [0,1],
+              title:       'Time',
+              showline:    true,
+              showticklabels: true,
+              ticks:       'outside',
+              showspikes:  true,
+              spikemode:   'across',
+              spikesnap:   'cursor',
+              spikecolor:  '#888'
+            },
+            yaxis: {
+              domain:        [0.5,1],
+              title:         plotChannels[0],
+              showline:      true,
+              showticklabels: true,
+              ticks:         'outside'
+            },
+
+            // eixo de baixo
+            xaxis2: {
+              domain:      [0,1],
+              anchor:      'y2',
+              matches:     'x',       // sincroniza zoom/pan com o de cima
+              title:       'Time',
+              showline:    true,
+              showticklabels: true,
+              ticks:       'outside',
+              showspikes:  true,
+              spikemode:   'across',
+              spikesnap:   'cursor',
+              spikecolor:  '#888'
+            },
+            yaxis2: {
+              domain:        [0,0.5],
+              anchor:        'x2',
+              title:         plotChannels[1],
+              showline:      true,
+              showticklabels: true,
+              ticks:         'outside'
+            }
           };
 
-          plotChannels.forEach((ch,i) => {
-            layout['xaxis'+(i+1)] = {
-              title: 'Time',          // muda aqui
-              showspikes: true,
-              spikemode: 'across',
-              spikesnap: 'cursor',
-              spikecolor: '#888',
-              matches: 'x1'           // liga todos ao primeiro eixo de Time
-            };
-            layout['yaxis'+(i+1)] = { title: ch };
-          });
-
+          // 3) Desenha
           Plotly.newPlot(plotDiv, traces, layout);
+
+          // 4) Hover + linha vertical
+          plotDiv.on('plotly_hover', ev => {
+            updateBars(ev);
+            const x = ev.points[0].x;
+            Plotly.relayout(plotDiv, {
+              shapes: [{
+                type: 'line', x0: x, x1: x,
+                y0: 0,    y1: 1,
+                xref: 'x',  // podes usar 'x' ou 'x2' mas ponta a 'paper' no Y
+                yref: 'paper',
+                line: { color: '#888', width: 1, dash: 'dot' }
+              }]
+            });
+          });
+          plotDiv.on('plotly_unhover', () => {
+            Plotly.relayout(plotDiv, { shapes: [] });
+          });
         }
+
 
 
         // encontra o índice mais próximo de um tempo
