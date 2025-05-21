@@ -116,7 +116,7 @@
     </style>
 </head>
 
-<div class="container py-4 modal-fullscreen">
+<div class="container modal-fullscreen">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div class="d-flex flex-column">
             <h2 class="mb-0">Sessões Selecionadas para Análise</h2>
@@ -336,25 +336,27 @@
             ch => new { times = ch.Times, values = ch.Values }
         )
     );
+    var lapsByFile = ((Dictionary<string, double[]>)ViewBag.LapsByFile);
 }
 
 @section Scripts {
     <script>
         // 1) Dados vindos do C#
         const dataBySession = @Html.Raw(JsonConvert.SerializeObject(jsData));
+        const lapsBySession = @Html.Raw(JsonConvert.SerializeObject(lapsByFile));
         let currentSession    = '@firstSession';
 
         // 2) Quais os canais que queremos nas barras
         const barChannels  = ['RPM','GPS LatAcc','GPS LonAcc','Water Temp'];
         // Se quiseres incluir Speed no gráfico, faz um array separado:
-        const plotChannels = ['GPS Speed', 'RPM'];
+        const plotChannels = ['GPS Speed', 'RPM','GPS LatAcc','GPS LonAcc'];
 
         // Para mapear nomes a sufixos de ID
         const idKey = {
-          'RPM':       { bar:'RPM',      max:'maxRPM',    curr:'rpmValue'    },
-          'GPS LatAcc':{ bar:'LatAcc',   max:'maxLatAcc', curr:'latAccValue' },
-          'GPS LonAcc':{ bar:'LonAcc',   max:'maxLonAcc', curr:'lonAccValue' },
-          'Water Temp':{ bar:'Temp',     max:'maxTemp',   curr:'tempValue'   }
+            'RPM':       { bar:'RPM',      max:'maxRPM',    curr:'rpmValue'    },
+            'GPS LatAcc':{ bar:'LatAcc',   max:'maxLatAcc', curr:'latAccValue' },
+            'GPS LonAcc':{ bar:'LonAcc',   max:'maxLonAcc', curr:'lonAccValue' },
+            'Water Temp':{ bar:'Temp',     max:'maxTemp',   curr:'tempValue'   }
         };
 
         let maxValues = {};
@@ -371,144 +373,175 @@
             });
         }
 
+        function plotAll(plotDiv) {
+            const sess   = dataBySession[currentSession] || {};
+            const traces = [];
+            const n      = plotChannels.length;
+            const height = 1/n;
 
-        // 5) Função que desenha todos os canais em grelha
-                function plotAll(plotDiv) {
-          const sess   = dataBySession[currentSession] || {};
-          const traces = [];
-
-          // 1) Cria cada trace apontando para x/y ou x2/y2
-          plotChannels.forEach((ch,i) => {
-            if (!sess[ch]) return;
-            const t = {
-              x: sess[ch].times,
-              y: sess[ch].values,
-              name: ch,
-              mode: 'lines'
+            // (calcula xMin/xMax dinamicamente se quiseres, mas com rangeslider não é obrigatório)
+            const layout = {
+                hovermode: 'x unified',
+                margin:    { t: 20 },
+                shapes:    []
             };
-            if (i === 0) {
-              t.xaxis = 'x';
-              t.yaxis = 'y';
-            } else if (i === 1) {
-              t.xaxis = 'x2';
-              t.yaxis = 'y2';
+
+            for (let i = 0; i < n; i++) {
+                const rowBot = i*height, rowTop = rowBot+height;
+                const xKey   = 'xaxis' + (i===0?'':i+1);
+                const yKey   = 'yaxis' + (i===0?'':i+1);
+
+                layout[xKey] = {
+                    domain:         [0,1],
+                    anchor:         yKey,
+                    title:          (i===0?'Time':''),
+                    showline:       true,
+                    showgrid:       false,
+                    showticklabels: true,
+                    ticks:          'outside',
+                    mirror:         'ticks',
+                    spikemode:      'across',
+                    spikesnap:      'cursor',
+                    spikecolor:     '#888',
+
+                    // **permitir** interação neste eixo
+                    fixedrange:     false,
+
+                    // apenas no primeiro eixo X:
+                    ...(i===0 && {
+                        rangeslider: {
+                        visible:   true,
+                        thickness: 0.1    // 10% da altura do plot
+                        },
+                        rangeselector: {     // botões opcionais
+                        buttons: [
+                            { count: 1,  label: '1m', step: 'minute', stepmode: 'backward' },
+                            { count: 5,  label: '5m', step: 'minute', stepmode: 'backward' },
+                            { step: 'all' }
+                        ]
+                        }
+                    }),
+
+                    // faz com que todos os outros x-eixos sigam o principal
+                    ...(i>0 && { matches: 'x' })
+                };
+
+                  layout[yKey] = {
+                        domain:         [rowBot, rowTop],
+                        anchor:         xKey,
+                        title:          plotChannels[i],
+                        showline:       true,
+                        showticklabels: true,
+                        ticks:          'outside',
+                        fixedrange:     true    // bloqueia Y
+                  };
             }
-            traces.push(t);
-          });
 
-          // 2) Layout com domínio manual
-          const layout = {
-            hovermode: 'x unified',
-            margin: { t:20 },
-
-            // eixo de cima
-            xaxis: {
-              domain:      [0,1],
-              title:       'Time',
-              showline:    true,
-              showticklabels: true,
-              ticks:       'outside',
-              showspikes:  true,
-              spikemode:   'across',
-              spikesnap:   'cursor',
-              spikecolor:  '#888'
-            },
-            yaxis: {
-              domain:        [0.5,1],
-              title:         plotChannels[0],
-              showline:      true,
-              showticklabels: true,
-              ticks:         'outside'
-            },
-
-            // eixo de baixo
-            xaxis2: {
-              domain:      [0,1],
-              anchor:      'y2',
-              matches:     'x',       // sincroniza zoom/pan com o de cima
-              title:       'Time',
-              showline:    true,
-              showticklabels: true,
-              ticks:       'outside',
-              showspikes:  true,
-              spikemode:   'across',
-              spikesnap:   'cursor',
-              spikecolor:  '#888'
-            },
-            yaxis2: {
-              domain:        [0,0.5],
-              anchor:        'x2',
-              title:         plotChannels[1],
-              showline:      true,
-              showticklabels: true,
-              ticks:         'outside'
-            }
-          };
-
-          // 3) Desenha
-          Plotly.newPlot(plotDiv, traces, layout);
-
-          // 4) Hover + linha vertical
-          plotDiv.on('plotly_hover', ev => {
-            updateBars(ev);
-            const x = ev.points[0].x;
-            Plotly.relayout(plotDiv, {
-              shapes: [{
-                type: 'line', x0: x, x1: x,
-                y0: 0,    y1: 1,
-                xref: 'x',  // podes usar 'x' ou 'x2' mas ponta a 'paper' no Y
-                yref: 'paper',
-                line: { color: '#888', width: 1, dash: 'dot' }
-              }]
+            // cria traces normalmente…
+            plotChannels.forEach((ch,i) => {
+                const s = sess[ch];
+                if (!s) return;
+                traces.push({
+                    x:     s.times,
+                    y:     s.values,
+                    name:  ch,
+                    mode:  'lines',
+                    xaxis: 'x' + (i===0?'':i+1),
+                    yaxis: 'y' + (i===0?'':i+1)
+                });
             });
-          });
-          plotDiv.on('plotly_unhover', () => {
-            Plotly.relayout(plotDiv, { shapes: [] });
-          });
-        }
 
+            const config = {
+                modeBarButtonsToRemove: [
+                    'zoom2d','pan2d','zoomIn2d','zoomOut2d','autoScale2d','resetScale2d'
+                ],
+                displaylogo: false,
+                scrollZoom: false
+            };
+
+            // 1) obter array de tempos de volta
+            const lapTimes = lapsBySession[currentSession] || [];
+
+            const lapShapes = lapsBySession[currentSession].map(t => ({
+                type:  'line',
+                x0:    t,
+                x1:    t,
+                y0:    0,
+                y1:    1,
+                xref:  'x',
+                yref:  'paper',
+                line: {
+                    color: 'red',
+                    width: 1,
+                    dash:  'dot'
+                }
+            }));
+
+            // 4) Desenha o grafico
+            Plotly.newPlot(plotDiv, traces, layout, config)
+                  .then(gd => {
+                // 5) hover handlers (mantém o teu bloco original)
+                gd.on('plotly_hover', ev => {
+                    updateBars(ev);
+                    const x = ev.points[0].x;
+                    const hoverShape = {
+                        type: 'line', x0: x, x1: x,
+                        y0: 0, y1: 1,
+                        xref: 'x', yref: 'paper',
+                        line: { color: '#888', width: 1, dash: 'dot' }
+                    };
+                    // junta lapShapes + linha de hover
+                    Plotly.relayout(gd, { shapes: lapShapes.concat([hoverShape]) });
+                });
+
+                gd.on('plotly_unhover', () => {
+                    // volta só às linhas de volta
+                    Plotly.relayout(gd, { shapes: lapShapes });
+                });
+            });
+        }
 
 
         // encontra o índice mais próximo de um tempo
         function bisectLeft(arr, x) {
-          let lo = 0, hi = arr.length;
-          while (lo < hi) {
-            const mid = (lo + hi) >> 1;
-            if (arr[mid] < x) lo = mid + 1;
-            else hi = mid;
-          }
-          return lo;
+            let lo = 0, hi = arr.length;
+            while (lo < hi) {
+                const mid = (lo + hi) >> 1;
+                if (arr[mid] < x) lo = mid + 1;
+                else hi = mid;
+            }
+            return lo;
         }
 
         function updateBars(ev) {
-          const sess  = dataBySession[currentSession] || {};
-          const timeX = ev.points[0].x;
-          barChannels.forEach(ch => {
-            const { bar: key } = idKey[ch];
-            const times  = sess[ch]?.times  || [];
-            const values = sess[ch]?.values || [];
-            // encontra índice por Time
-            let idx = bisectLeft(times, timeX);
-            if (idx >= values.length) idx = values.length - 1;
-            const val = values[idx] ?? 0;
-            const pct = maxValues[ch] ? val / maxValues[ch] * 100 : 0;
+            const sess  = dataBySession[currentSession] || {};
+            const timeX = ev.points[0].x;
+            barChannels.forEach(ch => {
+                const { bar: key } = idKey[ch];
+                const times  = sess[ch]?.times  || [];
+                const values = sess[ch]?.values || [];
+                // encontra índice por Time
+                let idx = bisectLeft(times, timeX);
+                if (idx >= values.length) idx = values.length - 1;
+                const val = values[idx] ?? 0;
+                const pct = maxValues[ch] ? val / maxValues[ch] * 100 : 0;
 
-            // altura da barra
-            const barEl = document.getElementById('bar'+key);
-            barEl.style.height = pct + '%';
+                // altura da barra
+                const barEl = document.getElementById('bar'+key);
+                barEl.style.height = pct + '%';
 
-            // actualiza texto dentro da barra
-            document.getElementById('label'+key).textContent = val.toFixed(2);
-          });
+                // actualiza texto dentro da barra
+                document.getElementById('label'+key).textContent = val.toFixed(2);
+            });
         }
 
 
-        function normalizeTimesToMs(sessionData) {
-          const secChannels = ['RPM','Water Temp'];
-          secChannels.forEach(ch => {
-            if (!sessionData[ch]) return;
-            sessionData[ch].times = sessionData[ch].times.map(t => t * 1000);
-          });
+        function normalizeTimesToS(sessionData) {
+            const secChannels = ['GPS LatAcc','GPS LonAcc', 'GPS Speed'];
+            secChannels.forEach(ch => {
+                if (!sessionData[ch]) return;
+                sessionData[ch].times = sessionData[ch].times.map(t => t / 1000);
+            });
         }
 
 
@@ -518,11 +551,11 @@
         const sidePanel = document.getElementById('sidePanel');
 
         btnShow.addEventListener('click', () => {
-          sidePanel.classList.add('open');
+            sidePanel.classList.add('open');
         });
 
         btnHide.addEventListener('click', () => {
-          sidePanel.classList.remove('open');
+            sidePanel.classList.remove('open');
         });
 
         // Fecha panel ao clicar fora
@@ -583,7 +616,7 @@
             });
 
             const sess = dataBySession[currentSession];
-            normalizeTimesToMs(sess);
+            normalizeTimesToS(sess);
 
             const plotArea = document.getElementById('plotArea');
             if (!plotArea) {

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -22,6 +23,21 @@ namespace ProjetoLabKarts.Controllers
         {
             _context = context;
             _env = env;
+        }
+
+        private Dictionary<string, double[]> BuildLapStartsDictionary(IEnumerable<SessaoKart> sessoes)
+        {
+            var dict = new Dictionary<string, double[]>();
+            foreach (var sessao in sessoes)
+            {
+                var fullPath = Path.Combine(_env.WebRootPath, "Uploads", sessao.NomeFicheiro);
+                var voltas = XRKReader.LoadLaps(fullPath);
+                dict[sessao.NomeFicheiro] = voltas
+                    .OrderBy(l => l.LapIndex)
+                    .Select(l => l.Start * 1000.0)
+                    .ToArray();
+            }
+            return dict;
         }
 
         [HttpGet]
@@ -86,27 +102,24 @@ namespace ProjetoLabKarts.Controllers
             }
 
             var canais = new List<ChannelData>();
+            var voltas = new List<LapInfo>();
             var channelsByFile = new Dictionary<string, List<ChannelData>>();
+            var lapsByFile = new Dictionary<string, double[]> ();
             foreach (var sessao in sessoes)
             {
                 var fullPath = Path.Combine(_env.WebRootPath, "Uploads", sessao.NomeFicheiro);
                 canais = XRKReader.LoadAllChannelData(fullPath);
                 channelsByFile[sessao.NomeFicheiro] = canais;
-                Console.WriteLine("Canais: " + canais.ToString());
-                Console.WriteLine("channelsByFile: " + channelsByFile[sessao.NomeFicheiro]);
-            }
 
-            var wt = canais.FirstOrDefault(ch => ch.Name == "Water Temp");
-            if (wt == null)
-            {
-                Console.WriteLine("Canal \"Water Temp\" não encontrado.");
-            }
+                voltas = XRKReader.LoadLaps(fullPath);
+                // converte start (em segundos) → ms e guarda num dicionário
+                var lapStartsMs = voltas
+                    .OrderBy(l => l.LapIndex)
+                    .Skip(1)
+                    .Select(l => l.Start)
+                    .ToArray();
 
-            Console.WriteLine($"=== Canal: {wt.Name} ({wt.Units}) ===");
-            int max = Math.Min(10, wt.Times.Length);
-            for (int i = 0; i < wt.Times.Length; i++)
-            {
-                Console.WriteLine($"  [{i}] Time = {wt.Times[i]:F3}, Value = {wt.Values[i]:F3}");
+                lapsByFile[sessao.NomeFicheiro] = lapStartsMs;
             }
 
             // Passa tudo para a View
@@ -117,6 +130,7 @@ namespace ProjetoLabKarts.Controllers
             ViewBag.diferencaVelocidadeMaximaDosOutrosFicheiros = diffVelocidade.ToString("F2");
             ViewBag.ChannelsByFile = channelsByFile;
             ViewBag.Tracks = new List<string>();
+            ViewBag.LapsByFile = lapsByFile;
 
             string nomePista = sessoes.Select(s => s.NomePista).First();
 

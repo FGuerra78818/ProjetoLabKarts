@@ -13,6 +13,13 @@ public class ChannelData
     public double[] Values { get; set; }
 }
 
+public class LapInfo
+{
+    public int LapIndex { get; set; }
+    public double Start { get; set; }
+    public double Duration { get; set; }
+}
+
 public static class XRKReader
 {
     public static List<ChannelData> LoadAllChannelData(string fullPath)
@@ -77,5 +84,47 @@ public static class XRKReader
         XRKInterop.close_file_i(idxf);
 
         return channels;
+    }
+
+    public static List<LapInfo> LoadLaps(string fullPath)
+    {
+        // 1) Abre ficheiro
+        int idxf = XRKInterop.open_file(fullPath);
+        if (idxf < 0)
+        {
+            string err = Marshal.PtrToStringAnsi(XRKInterop.get_last_open_error());
+            throw new InvalidOperationException($"Erro ao abrir {fullPath}: {err}");
+        }
+
+        var laps = new List<LapInfo>();
+
+        try
+        {
+            // 2) Número de voltas
+            int lapCount = XRKInterop.get_laps_count(idxf);
+
+            // 3) Para cada volta, lê início e duração
+            for (int i = 0; i < lapCount; i++)
+            {
+                double start, duration;
+                int ok = XRKInterop.get_lap_info(idxf, i, out start, out duration);
+                if (ok == 0)
+                    throw new Exception($"Erro a obter info da volta {i} no ficheiro {fullPath}");
+
+                laps.Add(new LapInfo
+                {
+                    LapIndex = i,
+                    Start = start,
+                    Duration = duration
+                });
+            }
+        }
+        finally
+        {
+            // 4) Fecha ficheiro
+            XRKInterop.close_file_i(idxf);
+        }
+
+        return laps;
     }
 }
