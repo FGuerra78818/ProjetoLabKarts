@@ -96,15 +96,17 @@ namespace ProjetoLabKarts.Controllers
                 Console.WriteLine("channelsByFile: " + channelsByFile[sessao.NomeFicheiro]);
             }
 
-            foreach (var ch in canais)
+            var wt = canais.FirstOrDefault(ch => ch.Name == "Water Temp");
+            if (wt == null)
             {
-                Console.WriteLine($"=== Canal: {ch.Name} ({ch.Units}) ===");
-                int max = Math.Min(10, ch.Times.Length);
-                for (int i = 0; i < max; i++)
-                {
-                    Console.WriteLine($"  [{i}] Time = {ch.Times[i]:F3}, Value = {ch.Values[i]:F3}");
-                }
-                Console.WriteLine(); // linha vazia entre canais
+                Console.WriteLine("Canal \"Water Temp\" não encontrado.");
+            }
+
+            Console.WriteLine($"=== Canal: {wt.Name} ({wt.Units}) ===");
+            int max = Math.Min(10, wt.Times.Length);
+            for (int i = 0; i < wt.Times.Length; i++)
+            {
+                Console.WriteLine($"  [{i}] Time = {wt.Times[i]:F3}, Value = {wt.Values[i]:F3}");
             }
 
             // Passa tudo para a View

@@ -270,7 +270,7 @@
             }
         </div>
 
-        <div id="plotArea" style="width:100%; height:400px;"></div>
+        <div id="plotArea" style="width:100%; height:800px;"></div>
         <div id="gauges" class="d-flex justify-content-around mt-4">
             <!-- RPM -->
             <div class="gauge-container">
@@ -355,56 +355,80 @@
             });
         }
 
-        function updateBars(idx) {
-            const sess = dataBySession[currentSession] || {};
-            barChannels.forEach(ch => {
-                const key    = idKey[ch].bar;
-                const val    = sess[ch]?.values[idx] ?? 0;
-                const pct    = maxValues[ch] ? (val / maxValues[ch] * 100).toFixed(1) : 0;
-                // Ajusta a altura da div
-                document.getElementById('bar' + key).style.height = pct + '%';
-                // Atualiza rótulo de valor actual
-                document.getElementById(idKey[ch].curr).textContent = val.toFixed(2);
-            });
-        }
 
         // 5) Função que desenha todos os canais em grelha
         function plotAll(plotDiv) {
-          const sess   = dataBySession[currentSession] || {};
-          const traces = [];
-
-          plotChannels.forEach((ch, i) => {
+          const sess    = dataBySession[currentSession] || {};
+          const traces  = [];
+          plotChannels.forEach((ch,i) => {
             if (!sess[ch]) return;
             traces.push({
-              x: sess[ch].times,
+              x: sess[ch].times,      // aqui já é Time
               y: sess[ch].values,
               name: ch,
-              xaxis: 'x' + (i+1),
-              yaxis: 'y' + (i+1),
+              xaxis: 'x'+(i+1),
+              yaxis: 'y'+(i+1),
               mode: 'lines'
             });
           });
 
-          // configurações da grelha + spike line
           const layout = {
             hovermode: 'x unified',
             grid: { rows: plotChannels.length, columns: 1, pattern: 'independent' },
-            margin: { t: 20 }
+            margin: { t:20 }
           };
 
-          plotChannels.forEach((ch, i) => {
-            layout['xaxis' + (i+1)] = {
-              title: 'Distância',
+          plotChannels.forEach((ch,i) => {
+            layout['xaxis'+(i+1)] = {
+              title: 'Time',          // muda aqui
               showspikes: true,
               spikemode: 'across',
               spikesnap: 'cursor',
-              spikecolor: '#888'
+              spikecolor: '#888',
+              matches: 'x1'           // liga todos ao primeiro eixo de Time
             };
-            layout['yaxis' + (i+1)] = { title: ch };
+            layout['yaxis'+(i+1)] = { title: ch };
           });
 
           Plotly.newPlot(plotDiv, traces, layout);
         }
+
+
+        // encontra o índice mais próximo de um tempo
+        function bisectLeft(arr, x) {
+          let lo = 0, hi = arr.length;
+          while (lo < hi) {
+            const mid = (lo + hi) >> 1;
+            if (arr[mid] < x) lo = mid + 1;
+            else hi = mid;
+          }
+          return lo;
+        }
+
+        function updateBars(ev) {
+          const sess   = dataBySession[currentSession] || {};
+          const timeX  = ev.points[0].x;        // este é o timestamp
+          barChannels.forEach(ch => {
+            const { bar: key, curr: currId } = idKey[ch];
+            const times  = sess[ch]?.times  || [];
+            const values = sess[ch]?.values || [];
+            let idx = bisectLeft(times, timeX);
+            if (idx >= values.length) idx = values.length - 1;
+            const val = values[idx] ?? 0;
+            const pct = maxValues[ch] ? val / maxValues[ch] * 100 : 0;
+            document.getElementById('bar'+key).style.height = pct + '%';
+            document.getElementById(currId).textContent     = val.toFixed(2);
+          });
+        }
+
+        function normalizeTimesToMs(sessionData) {
+          const secChannels = ['RPM','Water Temp'];
+          secChannels.forEach(ch => {
+            if (!sessionData[ch]) return;
+            sessionData[ch].times = sessionData[ch].times.map(t => t * 1000);
+          });
+        }
+
 
 
         const btnShow   = document.getElementById('btnShowDetails');
@@ -476,6 +500,9 @@
                 });
             });
 
+            const sess = dataBySession[currentSession];
+            normalizeTimesToMs(sess);
+
             const plotArea = document.getElementById('plotArea');
             if (!plotArea) {
               console.error('#plotArea não encontrado no DOM');
@@ -485,9 +512,7 @@
             calculaMaximos();
             plotAll(plotArea);
 
-            plotArea.on('plotly_hover', data => {
-                updateBars(data.points[0].pointIndex);
-            });
+            plotArea.on('plotly_hover', updateBars);
         });
     </script>
 }
