@@ -500,6 +500,18 @@
                 gd.on('plotly_hover', ev => {
                     updateBars(ev);
                     const x = ev.points[0].x;
+
+                    const times = dataBySession[currentSession]['GPS Latitude'].times;
+                    const idx = bisectLeft(times, x);
+                    // 2) obtém lat/lon desse índice
+                    const lat = dataBySession[currentSession]['GPS Latitude'].values[idx];
+                    const lon = dataBySession[currentSession]['GPS Longitude'].values[idx];
+                    // 3) actualiza o ponto (trace 1) no trackPlot
+                    Plotly.restyle('trackPlot',
+                        { x: [[lon]], y: [[lat]] },
+                        [1]   // segundo trace
+                    );
+
                     const hoverShape = {
                         type: 'line', x0: x, x1: x,
                         y0: 0, y1: 1,
@@ -513,10 +525,16 @@
                 gd.on('plotly_unhover', () => {
                     // volta só às linhas de volta
                     Plotly.relayout(gd, { shapes: lapShapes });
+
+                    // limpa o ponto
+                    Plotly.restyle('trackPlot',
+                        { x: [[]], y: [[]] },
+                        [1]
+                    );
                 });
 
                 gd.on('plotly_relayout', e => {
-                    const range = e['xaxis.range'];
+                    const range = e['xaxis.rangeslider.range'] ?? e['xaxis.range'];
                     if (!Array.isArray(range)) {
                     // veio só um relayout de shapes (hover), ignora
                         return;
@@ -587,12 +605,21 @@
             return;
             }
 
-            const trace = {
+            const traceLine = {
                 x: lon,
                 y: lat,
                 mode: 'lines',
                 showlegend: false,
                 line: { width: 2 }
+            };
+
+            const traceHover = {
+                x: [],            // vai receber [lon]
+                y: [],            // vai receber [lat]
+                mode: 'markers',
+                marker: { size: 8, color: 'red' },
+                hoverinfo: 'none',
+                showlegend: false
             };
 
             const layout = {
@@ -618,7 +645,7 @@
                 scrollZoom: false,
                 responsive: true
             };
-            Plotly.newPlot('trackPlot', [trace], layout, config);
+            Plotly.newPlot('trackPlot', [traceLine, traceHover], layout, config);
         }
 
         function updateTrackPlotByTime(t0, t1) {
@@ -637,10 +664,10 @@
             }
 
             // 1) Atualiza só os dados do trace
-            Plotly.restyle('trackPlot', {
-                x: [ newLon ],
-                y: [ newLat ]
-            });
+            Plotly.restyle('trackPlot',
+                { x: [newLon], y: [newLat] },
+                [0]
+            );
 
             // e força autorange de novo
             Plotly.relayout('trackPlot', {
@@ -648,9 +675,6 @@
                 'yaxis.autorange': true
             });
         }
-
-
-
 
         const btnShow   = document.getElementById('btnShowDetails');
         const btnHide   = document.getElementById('btnHideDetails');
