@@ -111,6 +111,14 @@ namespace ProjetoLabKarts.Controllers
                 canais = XRKReader.LoadAllChannelData(fullPath);
                 channelsByFile[sessao.NomeFicheiro] = canais;
 
+                var nomesDeCanal = canais.Select(c => c.Name).ToList();
+
+                // (Exemplo de saída para debug)
+                foreach (var nome in nomesDeCanal)
+                {
+                    Console.WriteLine(nome);
+                }
+
                 voltas = XRKReader.LoadLaps(fullPath);
                 // converte start (em segundos) → ms e guarda num dicionário
                 var lapStartsMs = voltas
