@@ -4,6 +4,8 @@
 @{
     ViewData["Title"] = "Configurações - " + Model.ViewName;
     var selectedCols = Model.SelectedColumns?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
+    var selectedGraphs = Model.SelectedGraphsList.ToArray();
+    var selectedProgressBars = Model.SelectedProgressBarsList.ToArray();
 }
 
 <div class="container py-4">
@@ -31,36 +33,84 @@
             <form asp-action="Edit" method="post">
                 <input type="hidden" name="viewName" value="@Model.ViewName" />
 
-                <!-- Linhas por página -->
-                <div class="mb-4">
-                    <label asp-for="RowsPerPage" class="form-label fw-semibold">Linhas por página</label>
-                    <input asp-for="RowsPerPage" class="form-control" />
-                    <span asp-validation-for="RowsPerPage" class="text-danger"></span>
-                </div>
-
-                <!-- Colunas disponíveis -->
-                <fieldset class="mb-4">
-                    <legend class="fs-6 fw-semibold mb-3">Colunas Disponíveis</legend>
-                    <div class="row">
-                        @foreach (var col in AppSettingsService.DefaultColumnsPerView
-                        .SelectMany(kvp => kvp.Value)
-                        .Distinct())
-                        {
-                            var isChecked = selectedCols.Contains(col);
-                            <div class="col-6 col-md-4 mb-2">
-                                <div class="form-check">
-                                    <input class="form-check-input"
-                                           type="checkbox"
-                                           name="columns"
-                                           value="@col"
-                                           id="col-@col"
-                                    @(isChecked ? "checked" : "") />
-                                    <label class="form-check-label" for="col-@col">@col</label>
-                                </div>
-                            </div>
-                        }
+                @if (Model.ViewName != "Analisador/Index") {
+                    <!-- Linhas por página -->
+                    <div class="mb-4">
+                        <label asp-for="RowsPerPage" class="form-label fw-semibold">Linhas por página</label>
+                        <input asp-for="RowsPerPage" class="form-control" />
+                        <span asp-validation-for="RowsPerPage" class="text-danger"></span>
                     </div>
-                </fieldset>
+
+                    <!-- Colunas disponíveis -->
+                    <fieldset class="mb-4">
+                        <legend class="fs-6 fw-semibold mb-3">Colunas Disponíveis</legend>
+                        <div class="row">
+                            @foreach (var col in AppSettingsService.DefaultColumnsPerView
+                           .SelectMany(kvp => kvp.Value)
+                           .Distinct())
+                            {
+                                var isChecked = selectedCols.Contains(col);
+                                <div class="col-6 col-md-4 mb-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input"
+                                               type="checkbox"
+                                               name="columns"
+                                               value="@col"
+                                               id="col-@col"
+                                        @(isChecked ? "checked" : "") />
+                                        <label class="form-check-label" for="col-@col">@col</label>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </fieldset>
+                }
+
+                @* Nova secção de Gráficos apenas para Analisador/Index *@
+                @if (Model.ViewName == "Analisador/Index")
+                {
+                    <fieldset class="mb-4">
+                        <legend class="fs-6 fw-semibold mb-3">Gráficos Disponíveis</legend>
+                        <div class="row">
+                            @foreach (var graph in (IEnumerable<string>)ViewBag.GraphsList)
+                            {
+                                var isChecked = selectedGraphs.Contains(graph);
+                                <div class="col-6 col-md-4 mb-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input"
+                                               type="checkbox"
+                                               name="graphs"
+                                               value="@graph"
+                                               id="graph-@graph"
+                                        @(isChecked ? "checked" : "") />
+                                        <label class="form-check-label" for="graph-@graph">@graph</label>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="mb-4">
+                        <legend class="fs-6 fw-semibold mb-3">ProgressBar's Disponíveis</legend>
+                        <div class="row">
+                            @foreach (var progressbar in (IEnumerable<string>)ViewBag.ProgressBarsList)
+                            {
+                                var isChecked = selectedProgressBars.Contains(progressbar);
+                                <div class="col-6 col-md-4 mb-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input"
+                                               type="checkbox"
+                                               name="progressbars"
+                                               value="@progressbar"
+                                               id="progressbar-@progressbar"
+                                        @(isChecked ? "checked" : "") />
+                                        <label class="form-check-label" for="progressbar-@progressbar">@progressbar</label>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </fieldset>
+                }
 
                 <!-- Botão de guardar -->
                 <div class="text-end">

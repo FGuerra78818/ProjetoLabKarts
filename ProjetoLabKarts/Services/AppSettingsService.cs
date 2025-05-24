@@ -21,6 +21,16 @@ public class AppSettingsService : IAppSettingsService
         ["Pistas/Details"] = new[] { "NomePiloto", "NumeroVoltas", "MelhorVolta", "VelocidadeMax" }
     };
 
+    public static readonly Dictionary<string, string[]> DefaultGraphsPerView = new Dictionary<string, string[]>
+    {
+        ["Analisador/Index"] = new[] { "Water Temp", "Internal Battery", "RPM", "GPS Speed", "GPS Nsat", "GPS LatAcc", "GPS LonAcc", "GPS Slope", "GPS PosAccuracy", "GPS SpdAccuracy", "GPS Latitude", "GPS Longitude", "GPS Radius", "GPS East", "GPS North", "GPS HeadGyro" }
+    };
+
+    public static readonly Dictionary<string, string[]> DefaultProgressBarsPerView = new Dictionary<string, string[]>
+    {
+        ["Analisador/Index"] = new[] { "Water Temp", "Internal Battery", "RPM", "GPS Speed", "GPS Nsat", "GPS LatAcc", "GPS LonAcc", "GPS Slope", "GPS PosAccuracy", "GPS SpdAccuracy", "GPS Latitude", "GPS Longitude", "GPS Radius", "GPS East", "GPS North", "GPS HeadGyro" }
+    };
+
     public static readonly string[] DefaultColumns = new[]
     {
         "NomeFicheiro","NomePiloto","NomePista","NumeroVoltas",
@@ -62,11 +72,13 @@ public class AppSettingsService : IAppSettingsService
         return settings;
     }
 
-    public async Task UpdateAsync(string viewName, int rowsPerPage, IEnumerable<string> columns)
+    public async Task UpdateAsync(string viewName, int rowsPerPage, IEnumerable<string> columns, IEnumerable<string> graphs, IEnumerable<string> progressbars)
     {
         var settings = await GetAsync(viewName);
         settings.RowsPerPage = rowsPerPage;
         settings.SelectedColumns = string.Join(',', columns);
+        settings.SelectedProgressBars = string.Join(',', progressbars);
+        settings.SelectedGraphs = string.Join(',', graphs);
         _db.AppSettings.Update(settings);
         await _db.SaveChangesAsync();
     }

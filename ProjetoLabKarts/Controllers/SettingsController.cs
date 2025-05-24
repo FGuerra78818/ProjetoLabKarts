@@ -15,7 +15,8 @@ namespace ProjetoLabKarts.Controllers
             "Pilotos/Index",
             "Pilotos/Details",
             "Pistas/Index",
-            "Pistas/Details"
+            "Pistas/Details",
+            "Analisador/Index"
         };
 
         private static readonly Dictionary<string, string> DisplayNames = new Dictionary<string, string>
@@ -24,7 +25,8 @@ namespace ProjetoLabKarts.Controllers
             ["Pilotos/Index"] = "Pilotos – Lista",
             ["Pilotos/Details"] = "Pilotos – Detalhes",
             ["Pistas/Index"] = "Pistas – Lista",
-            ["Pistas/Details"] = "Pistas – Detalhes"
+            ["Pistas/Details"] = "Pistas – Detalhes",
+            ["Analisador/Index"] = "Analisador - Index"
         };
 
         public SettingsController(IAppSettingsService settingsService)
@@ -52,18 +54,20 @@ namespace ProjetoLabKarts.Controllers
             var settings = await _settingsService.GetAsync(viewName);
             ViewBag.ViewsList = ViewsList;
             ViewBag.DisplayNames = DisplayNames;
+            ViewBag.GraphsList = AppSettingsService.DefaultGraphsPerView.GetValueOrDefault(viewName, Array.Empty<string>());
+            ViewBag.ProgressBarsList = AppSettingsService.DefaultProgressBarsPerView.GetValueOrDefault(viewName, Array.Empty<string>());
             ViewBag.SelectedCols = settings.SelectedColumns.Split(',', System.StringSplitOptions.RemoveEmptyEntries);
             return View(settings);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(string viewName, AppSettings model, string[] columns)
+        public async Task<IActionResult> Edit(string viewName, AppSettings model, string[] columns, string[] graphs, string[] progressbars)
         {
             if (!ViewsList.Contains(viewName))
                 return BadRequest();
 
-            await _settingsService.UpdateAsync(viewName, model.RowsPerPage, columns);
+            await _settingsService.UpdateAsync(viewName, model.RowsPerPage, columns, graphs ?? Array.Empty<string>(), progressbars ?? Array.Empty<string>());
             TempData["Success"] = "Configurações salvas com sucesso.";
             return RedirectToAction(nameof(Edit), new { viewName });
         }

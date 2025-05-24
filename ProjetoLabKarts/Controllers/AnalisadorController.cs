@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using ProjetoLabKarts.Data;
 using ProjetoLabKarts.Interop;
 using ProjetoLabKarts.Models;
+using ProjetoLabKarts.Services;
 
 namespace ProjetoLabKarts.Controllers
 {
@@ -18,11 +19,13 @@ namespace ProjetoLabKarts.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IWebHostEnvironment _env;
+        private readonly IAppSettingsService _settingsService;
 
-        public AnalisadorController(AppDbContext context, IWebHostEnvironment env)
+        public AnalisadorController(AppDbContext context, IWebHostEnvironment env, IAppSettingsService settingsService)
         {
             _context = context;
             _env = env;
+            _settingsService = settingsService;
         }
 
         private Dictionary<string, double[]> BuildLapStartsDictionary(IEnumerable<SessaoKart> sessoes)
@@ -148,6 +151,10 @@ namespace ProjetoLabKarts.Controllers
                 .ToListAsync();
 
             ViewBag.AllSessions = sessoesPista;
+
+            var appSettings = await _settingsService.GetAsync("Analisador/Index");
+            ViewBag.SelectedGraphs = appSettings.SelectedGraphsList;
+            ViewBag.SelectedProgressBars = appSettings.SelectedProgressBarsList;
 
             return View(sessoes);
         }

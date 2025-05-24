@@ -16,4 +16,22 @@ public class AppSettings
 
     [Display(Name = "Colunas selecionadas")]
     public string SelectedColumns { get; set; } = string.Empty; // ex: "NomePiloto,NomePista,DataHora"
+
+    [Display(Name = "Gráficos selecionados")]
+    public string SelectedGraphs { get; set; } = string.Empty;
+
+    // Propriedade auxiliar para a view
+    public IEnumerable<string> SelectedGraphsList
+        => string.IsNullOrEmpty(SelectedGraphs)
+           ? Array.Empty<string>()
+           : SelectedGraphs.Split(',', StringSplitOptions.RemoveEmptyEntries);
+
+    [Display(Name = "ProgressBar selecionadas")]
+    public string SelectedProgressBars { get; set; } = string.Empty;
+
+    // Propriedade auxiliar para a view
+    public IEnumerable<string> SelectedProgressBarsList
+        => string.IsNullOrEmpty(SelectedProgressBars)
+           ? Array.Empty<string>()
+           : SelectedProgressBars.Split(',', StringSplitOptions.RemoveEmptyEntries);
 }

@@ -7,6 +7,8 @@
     ViewData["Title"] = "Análise de Sessões";
     var channelsByFile = (Dictionary<string, List<ChannelData>>)ViewBag.ChannelsByFile;
     var firstSession = Model.FirstOrDefault()?.NomeFicheiro;
+    var selectedGraphs = (ViewBag.SelectedGraphs as IEnumerable<string>) ?? Enumerable.Empty<string>();
+    var selectedProgressBars = (ViewBag.SelectedProgressBars as IEnumerable<string>) ?? Enumerable.Empty<string>();
 }
 
 <head>
@@ -15,105 +17,105 @@
     <style>
         /* Painel lateral esquerdo 30% */
         .side-panel {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 30%; /* ocupa 30% da largura */
-            height: 100%;
-            background: #fff; /* ou o que te apetecer */
-            box-shadow: 2px 0 8px rgba(0,0,0,0.3);
-            z-index: 9999;
-            overflow-y: auto;
-            transform: translateX(-100%);
-            transition: transform .3s ease-in-out;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 30%; /* ocupa 30% da largura */
+        height: 100%;
+        background: #fff; /* ou o que te apetecer */
+        box-shadow: 2px 0 8px rgba(0,0,0,0.3);
+        z-index: 9999;
+        overflow-y: auto;
+        transform: translateX(-100%);
+        transition: transform .3s ease-in-out;
         }
 
-            .side-panel.open {
-                transform: translateX(0);
-            }
+        .side-panel.open {
+        transform: translateX(0);
+        }
 
-            .side-panel .panel-header {
-                padding: 1rem;
-                border-bottom: 1px solid #ddd;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
+        .side-panel .panel-header {
+        padding: 1rem;
+        border-bottom: 1px solid #ddd;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        }
 
-            .side-panel .panel-body {
-                padding: 1rem;
-            }
+        .side-panel .panel-body {
+        padding: 1rem;
+        }
 
         .d-none {
-            display: none !important;
+        display: none !important;
         }
 
         .chart-row {
-            display: flex;
-            justify-content: space-around;
-            margin: 10px 0;
+        display: flex;
+        justify-content: space-around;
+        margin: 10px 0;
         }
 
         .chart {
-            background: #222;
-            padding: 5px;
-            border-radius: 4px;
+        background: #222;
+        padding: 5px;
+        border-radius: 4px;
         }
 
         #gauges {
-            display: flex;
-            justify-content: space-around;
-            margin: 10px;
+        display: flex;
+        justify-content: space-around;
+        margin: 10px;
         }
 
         .gauge {
-            width: 180px;
-            height: 180px;
+        width: 180px;
+        height: 180px;
         }
 
         .progress-vertical {
-            width: 1.5rem;
-            height: 200px; /* altura total da barra */
-            background: #e9ecef;
-            border-radius: 0.25rem;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column-reverse; /* o “fundo” fica em baixo */
-            margin: 0 auto;
+        width: 1.5rem;
+        height: 200px; /* altura total da barra */
+        background: #e9ecef;
+        border-radius: 0.25rem;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column-reverse; /* o “fundo” fica em baixo */
+        margin: 0 auto;
         }
 
-            .progress-vertical .progress-bar {
-                width: 100%;
-                height: 0%; /* vai crescer em altura */
-                transition: height .2s ease;
-                position: relative;
-                display: flex;
-                align-items: flex-end;
-                justify-content: center;
-            }
+        .progress-vertical .progress-bar {
+        width: 100%;
+        height: 0%; /* vai crescer em altura */
+        transition: height .2s ease;
+        position: relative;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        }
 
         .gauge-container {
-            text-align: center;
+        text-align: center;
         }
 
-            .gauge-container .max-label .min-label {
-                font-size: .8rem;
-                margin-bottom: .25rem;
-            }
+        .gauge-container .max-label .min-label {
+        font-size: .8rem;
+        margin-bottom: .25rem;
+        }
 
-            .gauge-container .current-label {
-                font-size: .9rem;
-                margin-top: .25rem;
-            }
+        .gauge-container .current-label {
+        font-size: .9rem;
+        margin-top: .25rem;
+        }
 
         .bar-label {
-            position: absolute;
-            bottom: 0.25rem; /* fixa junto ao fundo da barra */
-            left: 50%; /* centra horizontalmente */
-            transform: translateX(-50%);
-            font-size: .75rem;
-            color: #fff;
-            pointer-events: none; /* para que não interfira no hover */
+        position: absolute;
+        bottom: 0.25rem; /* fixa junto ao fundo da barra */
+        left: 50%; /* centra horizontalmente */
+        transform: translateX(-50%);
+        font-size: .75rem;
+        color: #fff;
+        pointer-events: none; /* para que não interfira no hover */
         }
     </style>
 </head>
@@ -131,8 +133,8 @@
             </button>
 
             <button type="button"
-                    onclick="window.history.back();"
-                    class="btn btn-outline-secondary">
+            onclick="window.history.back();"
+            class="btn btn-outline-secondary">
                 ← Voltar
             </button>
         </div>
@@ -285,51 +287,28 @@
         </div>
 
         <div id="plotArea" style="width:100%; height:600px;"></div>
-        <div id="gauges" class="d-flex justify-content-around mt-4">
-            <!-- RPM -->
-            <div class="gauge-container">
-                <div class="max-label" id="maxRPM">—</div>
-                <div class="progress-vertical">
-                    <div id="barRPM" class="progress-bar bg-primary"></div>
-                    <span id="labelRPM" class="bar-label">0</span>
+        <div class="d-flex align-items-start mt-4">
+            @if (selectedProgressBars.Any())
+            {
+                <div id="gauges" class="d-flex justify-content-around mt-4" style="width:60%;">
+                    @foreach (var ch in selectedProgressBars)
+                    {
+                        var key = ch.Replace(" ", "");
+                        Console.WriteLine("key: " + key);
+                        <div class="gauge-container">
+                            <div class="fw-semibold mb-1">@ch</div>
+                            <div class="max-label" id="max@(key)">—</div>
+                            <div class="progress-vertical">
+                                <div id="bar@(key)" class="progress-bar bg-primary"></div>
+                                <span id="label@(key)" class="bar-label">0</span>
+                            </div>
+                            <div class="min-label" id="min@(key)">-</div>
+                            <div class="current-label" id="Value@(key)">0</div>
+                        </div>
+                    }
                 </div>
-                <div class="min-label" id="minRPM">-</div>
-                <div class="current-label" id="rpmValue">0</div>
-            </div>
-
-            <!-- GPS LatAcc -->
-            <div class="gauge-container">
-                <div class="max-label" id="maxLatAcc">—</div>
-                <div class="progress-vertical">
-                    <div id="barLatAcc" class="progress-bar bg-success"></div>
-                    <span id="labelLatAcc" class="bar-label">0</span>
-                </div>
-                <div class="min-label" id="minLatAcc">-</div>
-                <div class="current-label" id="latAccValue">0</div>
-            </div>
-
-            <!-- GPS LonAcc -->
-            <div class="gauge-container">
-                <div class="max-label" id="maxLonAcc">—</div>
-                <div class="progress-vertical">
-                    <div id="barLonAcc" class="progress-bar bg-warning"></div>
-                    <span id="labelLonAcc" class="bar-label">0</span>
-                </div>
-                <div class="min-label" id="minLonAcc">-</div>
-                <div class="current-label" id="lonAccValue">0</div>
-            </div>
-
-            <!-- Water Temp -->
-            <div class="gauge-container">
-                <div class="max-label" id="maxTemp">—</div>
-                <div class="progress-vertical">
-                    <div id="barTemp" class="progress-bar bg-info"></div>
-                    <span id="labelTemp" class="bar-label">0</span>
-                </div>
-                <div class="min-label" id="minTemp">-</div>
-                <div class="current-label" id="tempValue">0</div>
-            </div>
-            <div id="trackPlot" style="width:50%; height:400px; margin-top:2rem;"></div>
+            }
+            <div id="trackPlot" style="width:40%; height:400px; margin-top:2rem;"></div>
         </div>
     </div>
 </div>
@@ -351,34 +330,51 @@
         // 1) Dados vindos do C#
         const dataBySession = @Html.Raw(JsonConvert.SerializeObject(jsData));
         const lapsBySession = @Html.Raw(JsonConvert.SerializeObject(lapsByFile));
+        const selectedGraphs       = @Html.Raw(JsonConvert.SerializeObject(selectedGraphs));
+        const selectedProgressBars = @Html.Raw(JsonConvert.SerializeObject(selectedProgressBars));
         let currentSession    = '@firstSession';
         let maxValues = {}, minValues = {};
 
-        // 2) Quais os canais que queremos nas barras
-        const barChannels  = ['RPM','GPS LatAcc','GPS LonAcc','Water Temp'];
-        // Se quiseres incluir Speed no gráfico, faz um array separado:
-        const plotChannels = ['GPS Speed', 'RPM','GPS LatAcc','GPS LonAcc'];
+        const plotChannels = selectedGraphs;
+        const barChannels  = selectedProgressBars;
 
         // Para mapear nomes a sufixos de ID
         const idKey = {
-            'RPM':        { bar:'RPM',    max:'maxRPM',    min:'minRPM',    curr:'rpmValue'    },
-            'GPS LatAcc': { bar:'LatAcc', max:'maxLatAcc', min:'minLatAcc', curr:'latAccValue' },
-            'GPS LonAcc': { bar:'LonAcc', max:'maxLonAcc', min:'minLonAcc', curr:'lonAccValue' },
-            'Water Temp': { bar:'Temp',   max:'maxTemp',   min:'minTemp',   curr:'tempValue'   }
+            'RPM':          { bar:'RPM',    max:'maxRPM',    min:'minRPM',    curr:'ValueRPM'    },
+            'Internal Battery':   { bar:'InternalBattery',   max:'maxInternalBattery',   min:'minInternalBattery',   curr:'ValueInternalBattery'   },
+            'Water Temp':   { bar:'WaterTemp',   max:'maxWaterTemp',   min:'minWaterTemp',   curr:'ValueWaterTemp'   },
+            'GPS LatAcc':   { bar:'GPSLatAcc', max:'maxGPSLatAcc', min:'minGPSLatAcc', curr:'ValueGPSLatAcc' },
+            'GPS LonAcc':   { bar:'GPSLonAcc', max:'maxGPSLonAcc', min:'minGPSLonAcc', curr:'ValueGPSLonAcc' },
+            'GPS Speed':    { bar:'GPSSpeed',    max:'maxGPSSpeed',    min:'minGPSSpeed',    curr:'ValueGPSSpeed' },
+            'GPS Nsat':   { bar:'GPSNsat', max:'maxGPSNsat', min:'minGPSNsat', curr:'ValueGPSNsat' },
+            'GPS Slope':   { bar:'GPSSlope', max:'maxGPSSlope', min:'minGPSSlope', curr:'ValueGPSSlope' },
+            'GPS Altitude':   { bar:'GPSAltitude',   max:'maxGPSAltitude',   min:'minGPSAltitude',   curr:'ValueGPSAltitude' },
+            'GPS PosAccuracy':   { bar:'GPSPosAccuracy', max:'maxGPSPosAccuracy', min:'minGPSPosAccuracy', curr:'ValueGPSPosAccuracy' },
+            'GPS SpdAccuracy':   { bar:'GPSSpdAccuracy', max:'maxGPSSpdAccuracy', min:'minGPSSpdAccuracy', curr:'ValueGPSSpdAccuracy' },
+            'GPS Latitude':    { bar:'GPSLatitude',    max:'maxGPSLatitude',    min:'minGPSLatitude',    curr:'ValueGPSLatitude' },
+            'GPS Longitude':   { bar:'GPSLongitude', max:'maxGPSLongitude', min:'minGPSLongitude', curr:'ValueGPSLongitude' },
+            'GPS Radius':   { bar:'GPSRadius', max:'maxGPSRadius', min:'minGPSRadius', curr:'ValueGPSRadius' },
+            'GPS East':   { bar:'GPSEast',   max:'maxGPSEast',   min:'minGPSEast',   curr:'ValueGPSEast' },
+            'GPS North':   { bar:'GPSNorth',   max:'maxGPSNorth',   min:'minGPSNorth',   curr:'ValueGPSNorth' },
         };
 
         // 3) Calcula máximos para normalizar a largura das barras
         function calculaMaximos() {
             const sess = dataBySession[currentSession] || {};
             barChannels.forEach(ch => {
+                const keys = idKey[ch] || {};
+                const elMax = document.getElementById(keys.max);
+                const elMin = document.getElementById(keys.min);
                 const vals = sess[ch]?.values || [];
                 const m = vals.length ? Math.max(...vals) : 0;
                 const n = vals.length ? Math.min(...vals) : 0;
                 maxValues[ch] = m;
                 minValues[ch] = n;
                 // Escreve o valor máximo no topo
-                document.getElementById(idKey[ch].max).textContent = m.toFixed(2);
-                document.getElementById(idKey[ch].min).textContent = n.toFixed(2);
+                if (elMax) elMax.textContent = m.toFixed(2);
+                else console.warn(`max element not found for ${ch} (id="${keys.max}")`);
+                if (elMin) elMin.textContent = n.toFixed(2);
+                else console.warn(`min element not found for ${ch} (id="${keys.min}")`);
             });
         }
 
@@ -552,6 +548,7 @@
 
                     console.log('Rangeslider válido → x0:', x0, 'x1:', x1);
                     updateTrackPlotByTime(x0, x1);
+                    updateBars({ points: [ { x: x0 } ] });
                 });
             });
         }
@@ -589,7 +586,7 @@
 
 
         function normalizeTimesToS(sessionData) {
-            const secChannels = ['GPS LatAcc','GPS LonAcc', 'GPS Speed', 'GPS Latitude','GPS Longitude'];
+            const secChannels = ['GPS LatAcc','GPS LonAcc', 'GPS Speed', 'GPS Latitude','GPS Longitude', 'GPS North', 'GPS East','GPS Radius', 'GPS PosAccuracy','GPS SpdAccuracy','GPS Slope'];
             secChannels.forEach(ch => {
                 if (!sessionData[ch]) return;
                 sessionData[ch].times = sessionData[ch].times.map(t => t / 1000);
