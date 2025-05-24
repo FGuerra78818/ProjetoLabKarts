@@ -9,7 +9,7 @@
             <h1 class="mb-3 fs-1">Dashboard</h1>
             <p class="lead fs-6">Analise os dados de telemetria do kart e melhore a sua performance.</p>
         </div>
-        <!-- Card do botão de upload (mantido igual) -->
+        <!-- Card do botão de upload -->
         <div class="col-lg-4">
             <div class="card shadow border rounded-3 h-100 ms-lg-3">
                 <div class="card-body p-0">
@@ -132,14 +132,18 @@
             <div class="card shadow p-2" style="height: 100%;">
                 <div class="card-body d-flex flex-column">
                     <h5 class="card-title mb-3">Pista</h5>
-                    <div id="map-preview" class="position-relative rounded shadow-sm" style="min-height: 220px;">
+                    <div id="map-preview" class="position-relative rounded shadow-sm" style="height: 350px;">
                         <img id="placeholder-image"
                              src="/images/ImageMap.jpg"
                              alt="Nenhuma pista selecionada"
                              class="rounded"
                              style="object-fit: cover; z-index: 1; height: 100%; width: 100%;" />
-                        <div id="map-container" class="position-absolute inset-0 w-100 h-100 rounded"
-                             style="display:none; height: 500px;"></div>
+                        <iframe id="map-embed"
+                                class="position-absolute inset-0 w-100 h-100 rounded"
+                                style="border:0; display:none; z-index:2;"
+                                allowfullscreen
+                                referrerpolicy="no-referrer-when-downgrade">
+                        </iframe>
                     </div>
                 </div>
             </div>
@@ -152,48 +156,22 @@
     <script>
         let map;
 
-        function initMap() {
-            const placeholder = document.getElementById("placeholder-image");
-            const mapContainer = document.getElementById("map-container");
+        document.querySelectorAll(".table-row-clickable").forEach(row => {
+            row.addEventListener("click", function(e) {
+                if (e.target.tagName.toLowerCase() === 'a') return;
 
-            map = new google.maps.Map(mapContainer, {
-                center: { lat: 41.6506, lng: -8.7993 },
-                zoom: 17,
-                mapTypeId: "satellite",
-                disableDefaultUI: true,
-                styles: [
-                    { featureType: "all", elementType: "labels", stylers: [{ visibility: "off" }] },
-                    { featureType: "road", stylers: [{ visibility: "off" }] },
-                    { featureType: "poi", stylers: [{ visibility: "off" }] },
-                    { featureType: "transit", stylers: [{ visibility: "off" }] },
-                    { featureType: "administrative", stylers: [{ visibility: "off" }] },
-                    { featureType: "water", elementType: "labels", stylers: [{ visibility: "off" }] }
-                ]
+                const lat = parseFloat(this.dataset.lat);
+                const lng = parseFloat(this.dataset.long);
+                if (isNaN(lat) || isNaN(lng)) return;
+
+                // esconde placeholder e mostra iframe
+                document.getElementById("placeholder-image").style.display = "none";
+                const iframe = document.getElementById("map-embed");
+                // t=k (satellite), z=17 (zoom)
+                iframe.src = `https://www.google.com/maps?q=${lat},${lng}&z=17&t=k&output=embed`;
+                iframe.style.display = "block";
             });
-
-            // Atualizar mapa ao clicar numa pista
-            document.querySelectorAll(".table-row-clickable").forEach(row => {
-                row.addEventListener("click", function (e) {
-                    if (e.target.tagName.toLowerCase() === 'a') return;
-
-                    const lat = parseFloat(this.dataset.lat);
-                    const lng = parseFloat(this.dataset.long);
-
-                    if (!isNaN(lat) && !isNaN(lng)) {
-                        map.setCenter({ lat: lat, lng: lng });
-                        map.setZoom(17);
-
-                        // Oculta a imagem assim que uma pista for clicada
-                        if (placeholder) {
-                            placeholder.style.display = "none";
-                        }
-                        if(mapContainer){
-                            mapContainer.style.display = "block";
-                        }
-                    }
-                });
-            });
-        }
+        });
 
         const fileInput = document.getElementById("file-upload");
         const resultBox = document.getElementById("upload-result");
@@ -253,7 +231,7 @@
 
                 if (response.ok) {
                     alert("Sessão eliminada com sucesso.");
-                    location.reload(); // ou remove a linha da tabela dinamicamente
+                    location.reload();
                 } else {
                     const error = await response.text();
                     alert("Erro ao eliminar: " + error);
