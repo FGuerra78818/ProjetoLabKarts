@@ -9,6 +9,7 @@
     var firstSession = Model.FirstOrDefault()?.NomeFicheiro;
     var selectedGraphs = (ViewBag.SelectedGraphs as IEnumerable<string>) ?? Enumerable.Empty<string>();
     var selectedProgressBars = (ViewBag.SelectedProgressBars as IEnumerable<string>) ?? Enumerable.Empty<string>();
+    var voltasByFile = (Dictionary<string, List<ProjetoLabKarts.Interop.LapInfo>>)ViewBag.VoltasByFile;
 }
 
 <head>
@@ -221,7 +222,7 @@
                         </table>
 
                         <!-- 2ª Tabela de detalhes -->
-                        <h5>Detalhe dos Canais de Telemetria</h5>
+                        <h5>Detalhes da Sessão</h5>
                         <div id="channelDetails">
                             @foreach (var s in Model)
                             {
@@ -231,21 +232,20 @@
                                         <table class="table table-borderless align-middle">
                                             <thead class="text-muted border-bottom">
                                                 <tr>
-                                                    <th>Canal</th>
-                                                    <th>Unidades</th>
-                                                    <th># Pontos</th>
+                                                    <th>Número da Volta</th>
+                                                    <th>Tempo da Volta (s)</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 @{
-                                                    var canais = channelsByFile[s.NomeFicheiro];
+                                                    // Lista de LapInfo para esta sessão
+                                                    var laps = voltasByFile[s.NomeFicheiro];
                                                 }
-                                                @foreach (var ch in canais)
+                                                @foreach (var lap in laps)
                                                 {
                                                     <tr>
-                                                        <td>@ch.Name</td>
-                                                        <td>@ch.Units</td>
-                                                        <td>@ch.Values.Length</td>
+                                                        <td>@(lap.LapIndex)</td>
+                                                        <td>@lap.Duration.ToString("F3", CultureInfo.InvariantCulture)</td>
                                                     </tr>
                                                 }
                                             </tbody>

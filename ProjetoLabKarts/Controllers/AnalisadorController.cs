@@ -106,6 +106,7 @@ namespace ProjetoLabKarts.Controllers
 
             var canais = new List<ChannelData>();
             var voltas = new List<LapInfo>();
+            var voltasByFile = new Dictionary<string, List<LapInfo>>();
             var channelsByFile = new Dictionary<string, List<ChannelData>>();
             var lapsByFile = new Dictionary<string, double[]> ();
             foreach (var sessao in sessoes)
@@ -130,6 +131,11 @@ namespace ProjetoLabKarts.Controllers
                     .Select(l => l.Start)
                     .ToArray();
 
+                var voltasAux = voltas
+                         .OrderBy(l => l.LapIndex)
+                         .ToList();
+
+                voltasByFile[sessao.NomeFicheiro] = voltasAux;
                 lapsByFile[sessao.NomeFicheiro] = lapStartsMs;
             }
 
@@ -142,6 +148,7 @@ namespace ProjetoLabKarts.Controllers
             ViewBag.ChannelsByFile = channelsByFile;
             ViewBag.Tracks = new List<string>();
             ViewBag.LapsByFile = lapsByFile;
+            ViewBag.VoltasByFile = voltasByFile;
 
             string nomePista = sessoes.Select(s => s.NomePista).First();
 
