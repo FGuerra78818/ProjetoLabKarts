@@ -330,9 +330,9 @@
         // 1) Dados vindos do C#
         const dataBySession = @Html.Raw(JsonConvert.SerializeObject(jsData));
         const lapsBySession = @Html.Raw(JsonConvert.SerializeObject(lapsByFile));
-        const selectedGraphs       = @Html.Raw(JsonConvert.SerializeObject(selectedGraphs));
+        const selectedGraphs = @Html.Raw(JsonConvert.SerializeObject(selectedGraphs));
         const selectedProgressBars = @Html.Raw(JsonConvert.SerializeObject(selectedProgressBars));
-        let currentSession    = '@firstSession';
+        let currentSession = '@firstSession';
         let maxValues = {}, minValues = {};
 
         const plotChannels = selectedGraphs;
@@ -356,6 +356,8 @@
             'GPS Radius':   { bar:'GPSRadius', max:'maxGPSRadius', min:'minGPSRadius', curr:'ValueGPSRadius' },
             'GPS East':   { bar:'GPSEast',   max:'maxGPSEast',   min:'minGPSEast',   curr:'ValueGPSEast' },
             'GPS North':   { bar:'GPSNorth',   max:'maxGPSNorth',   min:'minGPSNorth',   curr:'ValueGPSNorth' },
+            'GPS Gyro':     { bar:'GPSGyro', max:'maxGPSGyro', min:'minGPSGyro', curr:'ValueGPSGyro' },
+            'GPS Heading':  { bar:'GPSHeading', max:'maxGPSHeading', min:'minGPSHeading', curr:'ValueGPSHeading' }
         };
 
         // 3) Calcula máximos para normalizar a largura das barras
@@ -383,6 +385,7 @@
             const traces = [];
             const n      = plotChannels.length;
             const height = 1/n;
+            const panels = plotChannels;
 
             const allTimes = sess[ plotChannels[0] ]?.times || [];
             const t0 = 0;
@@ -415,9 +418,13 @@
             };
 
             for (let i = 0; i < n; i++) {
+                const panel   = panels[i];
                 const rowBot = i*height, rowTop = rowBot+height;
                 const xKey   = 'xaxis' + (i===0?'':i+1);
                 const yKey   = 'yaxis' + (i===0?'':i+1);
+                const titleY  = panel === 'GPS HeadGyro'
+                                ? 'GPS HeadGyro'
+                                : panel;
 
                 layout[xKey] = {
                     domain:         [0,1],
@@ -457,7 +464,7 @@
                   layout[yKey] = {
                         domain:         [rowBot, rowTop],
                         anchor:         xKey,
-                        title:          plotChannels[i],
+                        title:          titleY,
                         showline:       true,
                         showticklabels: true,
                         ticks:          'outside',
@@ -466,18 +473,23 @@
             }
 
             // cria traces normalmente…
-            plotChannels.forEach((ch,i) => {
-                const s = sess[ch];
-                if (!s) return;
-                traces.push({
-                    x:     s.times,
-                    y:     s.values,
-                    name:  ch,
-                    mode:  'lines',
-                    meta:  ch,
-                    hovertemplate: `<b>${ch}</b><br>%{y:.2f}<extra></extra>`,
-                    xaxis: 'x' + (i===0?'':i+1),
-                    yaxis: 'y' + (i===0?'':i+1)
+            plotChannels.forEach((panel,i) => {
+                const channels = panel === 'GPS HeadGyro'
+                                 ? ['GPS Heading','GPS Gyro']
+                                 : [panel];
+                channels.forEach(ch => {
+                    const s = sess[ch];
+                    if (!s) return;
+                    traces.push({
+                        x:     s.times,
+                        y:     s.values,
+                        name:  ch,
+                        mode:  'lines',
+                        meta:  ch,
+                        hovertemplate: `<b>${ch}</b><br>%{y:.2f}<extra></extra>`,
+                        xaxis: 'x' + (i===0?'':i+1),
+                        yaxis: 'y' + (i===0?'':i+1)
+                    });
                 });
             });
 
@@ -586,7 +598,7 @@
 
 
         function normalizeTimesToS(sessionData) {
-            const secChannels = ['GPS LatAcc','GPS LonAcc', 'GPS Speed', 'GPS Latitude','GPS Longitude', 'GPS North', 'GPS East','GPS Radius', 'GPS PosAccuracy','GPS SpdAccuracy','GPS Slope'];
+            const secChannels = ['GPS LatAcc','GPS LonAcc', 'GPS Speed', 'GPS Latitude','GPS Longitude', 'GPS North', 'GPS East','GPS Radius', 'GPS PosAccuracy','GPS SpdAccuracy','GPS Slope','GPS Heading','GPS Gyro'];
             secChannels.forEach(ch => {
                 if (!sessionData[ch]) return;
                 sessionData[ch].times = sessionData[ch].times.map(t => t / 1000);
