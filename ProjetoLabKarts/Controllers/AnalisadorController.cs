@@ -12,6 +12,7 @@ using ProjetoLabKarts.Data;
 using ProjetoLabKarts.Interop;
 using ProjetoLabKarts.Models;
 using ProjetoLabKarts.Services;
+using MathNet.Numerics.Interpolation;
 
 namespace ProjetoLabKarts.Controllers
 {

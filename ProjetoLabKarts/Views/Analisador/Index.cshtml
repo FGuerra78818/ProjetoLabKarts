@@ -727,6 +727,16 @@
         document.addEventListener('DOMContentLoaded', () => {
             const rows    = document.querySelectorAll('#sessionTable .clickable-row');
             const details = document.querySelectorAll('.channel-details');
+            const plotArea  = document.getElementById('plotArea');
+
+            Object.values(dataBySession).forEach(sessData => {
+                normalizeTimesToS(sessData);
+            });
+
+            calculaMaximos();
+            plotAll(plotArea);
+            plotTrack();
+            plotArea.on('plotly_hover', updateBars);
 
             rows.forEach(row => {
                 row.addEventListener('click', () => {
@@ -735,27 +745,19 @@
                     row.classList.add('table-active');
 
                     const sessionId = row.dataset.session;
+                    console.log('Sessão clicada:', sessionId);
+
                     // Mostrar/esconder detalhes
                     details.forEach(div => {
                         div.classList.toggle('d-none', div.dataset.session !== sessionId);
                     });
+
+                    currentSession = sessionId;
+                    calculaMaximos();
+                    plotAll(plotArea);
+                    plotTrack();
                 });
             });
-
-            const sess = dataBySession[currentSession];
-            normalizeTimesToS(sess);
-
-            const plotArea = document.getElementById('plotArea');
-            if (!plotArea) {
-              console.error('#plotArea não encontrado no DOM');
-              return;
-            }
-
-            calculaMaximos();
-            plotAll(plotArea);
-            plotTrack();
-
-            plotArea.on('plotly_hover', updateBars);
         });
     </script>
 }
