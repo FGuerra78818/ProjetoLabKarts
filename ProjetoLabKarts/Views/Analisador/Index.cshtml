@@ -129,6 +129,10 @@
         </div>
 
         <div class="d-flex align-items-center gap-2">
+            <button id="btnCompareLaps" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#compareLapsModal">
+                Comparar Voltas
+            </button>
+
             <button id="btnShowDetails" class="btn btn-primary">
                 Ver Detalhes dos Canais
             </button>
@@ -171,6 +175,40 @@
                     <small class="text-muted">
                         +@ViewBag.diferencaVelocidadeMaximaDosOutrosFicheiros para a Velocidade Máxima dos outros ficheiros
                     </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Comparar Voltas -->
+    <div class="modal fade" id="compareLapsModal" tabindex="-1" aria-labelledby="compareLapsLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="compareLapsLabel">Comparar Voltas</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    @foreach (var s in Model)
+                    {
+                        var laps = voltasByFile[s.NomeFicheiro];
+                        <div class="mb-3">
+                            <h6 class="fw-semibold">@s.NomeFicheiro</h6>
+                            <div class="d-flex flex-wrap gap-2">
+                                @for (int i = 0; i <= laps.Count - 1; i++)
+                                {
+                                    <div class="form-check">
+                                        <input class="form-check-input compare-lap-checkbox" type="checkbox" value="@i" data-session="@s.NomeFicheiro" id="compareLap_@s.NomeFicheiro@i">
+                                        <label class="form-check-label" for="compareLap_@s.NomeFicheiro@i">Volta @i</label>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" id="confirmCompareLaps" class="btn btn-primary">Comparar</button>
                 </div>
             </div>
         </div>
@@ -334,6 +372,7 @@
         const selectedProgressBars = @Html.Raw(JsonConvert.SerializeObject(selectedProgressBars));
         let currentSession = '@firstSession';
         let maxValues = {}, minValues = {};
+        let compareSelections = [];
 
         const plotChannels = selectedGraphs;
         const barChannels  = selectedProgressBars;
@@ -380,7 +419,284 @@
             });
         }
 
-        function plotAll(plotDiv) {
+        function plotAll(plotDivId) {
+            if (compareSelections.length) plotCompare(plotDivId);
+            else plotNormal(plotDivId);
+        }
+
+        function plotCompare(plotDivId) {
+            const traces = [];
+            const n      = plotChannels.length;
+            const height = 1 / n;
+            const layout = {
+                hovermode: 'x unified',
+                margin: { t: 20 },
+                shapes: [],
+                dragmode: false
+            };
+
+            // Configura os eixos verticalmente
+            for (let i = 0; i < n; i++) {
+                const xKey = 'xaxis' + (i === 0 ? '' : i + 1);
+                const yKey = 'yaxis' + (i === 0 ? '' : i + 1);
+                const titleY = (plotChannels[i] === 'GPS HeadGyro')
+                    ? 'GPS Heading / GPS Gyro'
+                    : plotChannels[i];
+
+                layout[xKey] = {
+                    domain: [0, 1],
+                    anchor: yKey,
+                    title: i === 0 ? 'Posição GPS (m)' : '',
+                    fixedrange: true
+                };
+                layout[yKey] = {
+                    domain: [i * height, i * height + height],
+                    anchor: xKey,
+                    title: titleY,
+                    fixedrange: true
+                };
+            }
+
+            // Determinar firstT0 e firstT1 com base na primeira seleção
+            let firstT0 = 0, firstT1 = 0;
+            if (compareSelections.length) {
+                const firstSel = compareSelections[0];
+                const sessData = dataBySession[firstSel.session] || {};
+                const principais = plotChannels[0];
+                const timesPrinc = sessData[principais]?.times || [];
+                const ultimoTempo = timesPrinc[timesPrinc.length - 1] || 0;
+
+                const rawLapDurations = lapsBySession[firstSel.session] || [];
+                const lapEnds = [];
+                let acum = 0;
+                rawLapDurations.forEach(dur => {
+                    acum += dur;
+                    lapEnds.push(acum);
+                });
+                if (lapEnds.length === 0 || lapEnds[lapEnds.length - 1] < ultimoTempo) {
+                    lapEnds.push(ultimoTempo);
+                }
+
+                const idxLap = firstSel.lap;
+                if (idxLap >= 0 && idxLap < lapEnds.length) {
+                    firstT1 = lapEnds[idxLap];
+                    firstT0 = (idxLap > 0) ? lapEnds[idxLap - 1] : 0;
+                }
+            }
+
+            compareSelections.forEach(sel => {
+                const sessData = dataBySession[sel.session] || {};
+
+                // 1) Extrair GPS (já em segundos, assumir que normalizeTimesToS foi chamado)
+                const gpsLatTimes = sessData['GPS Latitude']?.times || [];
+                const gpsLats     = sessData['GPS Latitude']?.values || [];
+                const gpsLons     = sessData['GPS Longitude']?.values || [];
+                if (gpsLatTimes.length < 2 || gpsLats.length < 2 || gpsLons.length < 2) {
+                    console.warn(`Sem dados GPS suficientes para a sessão ${sel.session}`);
+                    return;
+                }
+
+                // 2) Pré-cálculo de distâncias cumulativas
+                const N = gpsLatTimes.length;
+                const gpsDist = new Array(N);
+                gpsDist[0] = 0;
+                for (let i = 1; i < N; i++) {
+                    const lat1 = gpsLats[i - 1], lon1 = gpsLons[i - 1];
+                    const lat2 = gpsLats[i],     lon2 = gpsLons[i];
+                    const toRad = Math.PI / 180;
+                    const φ1 = lat1 * toRad;
+                    const φ2 = lat2 * toRad;
+                    const Δφ = (lat2 - lat1) * toRad;
+                    const Δλ = (lon2 - lon1) * toRad;
+                    const R = 6371000;
+                    const a = Math.sin(Δφ / 2) ** 2 +
+                              Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
+                    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                    gpsDist[i] = gpsDist[i - 1] + R * c;
+                }
+
+                // 3) Função de busca binária para encontrar o índice k / k+1
+                function findTimeIndex(t) {
+                    let lo = 0, hi = N - 1;
+                    if (t <= gpsLatTimes[0]) return 0;
+                    if (t >= gpsLatTimes[hi]) return hi;
+                    while (lo < hi - 1) {
+                        const mid = (lo + hi) >> 1;
+                        if (gpsLatTimes[mid] <= t) lo = mid;
+                        else hi = mid;
+                    }
+                    return lo; // garante gpsLatTimes[lo] <= t < gpsLatTimes[lo+1]
+                }
+
+                // 4) Função distAtTime com binária + interpolação
+                function distAtTime(t) {
+                    // antes do primeiro ou depois do último
+                    if (t <= gpsLatTimes[0]) return gpsDist[0];
+                    if (t >= gpsLatTimes[N - 1]) return gpsDist[N - 1];
+                    const k = findTimeIndex(t);
+                    const t0 = gpsLatTimes[k],   t1 = gpsLatTimes[k + 1];
+                    const d0 = gpsDist[k],       d1 = gpsDist[k + 1];
+                    const frac = (t - t0) / (t1 - t0);
+                    return d0 + frac * (d1 - d0);
+                }
+
+                // 5) Determinar limites da volta em t e d
+                const primeiras = plotChannels[0];
+                const temposPainel = sessData[primeiras]?.times || [];
+                const ultimoPainel = temposPainel[temposPainel.length - 1] || 0;
+                let lapEnds = lapsBySession[sel.session] || [];
+                if (lapEnds.length === 0 || lapEnds[lapEnds.length - 1] < ultimoPainel) {
+                    lapEnds = lapEnds.concat(ultimoPainel);
+                }
+                const idxLap = sel.lap;
+                if (idxLap < 0 || idxLap >= lapEnds.length) return;
+                const t0 = idxLap > 0 ? lapEnds[idxLap - 1] : 0;
+                const t1 = lapEnds[idxLap];
+                const d0 = distAtTime(t0);
+
+                // 6) Para cada canal, criar trace com x = distâncias - d0
+                plotChannels.forEach((panel, i) => {
+                    const channels = (panel === 'GPS HeadGyro')
+                        ? ['GPS Heading', 'GPS Gyro']
+                        : [panel];
+
+                    channels.forEach(ch => {
+                        const times = sessData[ch]?.times || [];
+                        const vals  = sessData[ch]?.values || [];
+                        if (!times.length || !vals.length) return;
+
+                        const segX = [];
+                        const segY = [];
+                        const segT = [];  // tempo relativo para hover
+
+                        for (let k = 0; k < times.length; k++) {
+                            const tk = times[k];
+                            if (tk < t0 || tk > t1) continue;
+                            const distK = distAtTime(tk);
+                            segX.push(distK - d0);
+                            segY.push(vals[k]);
+                            segT.push(tk - t0);
+                        }
+
+                        traces.push({
+                            x: segX,
+                            y: segY,
+                            customdata: segT,
+                            name: `${sel.session} Volta ${idxLap + 1} – ${ch}`,
+                            mode: 'lines',
+                            xaxis: 'x' + (i === 0 ? '' : i + 1),
+                            yaxis: 'y' + (i === 0 ? '' : i + 1)
+                        });
+                    });
+                });
+            });
+
+            Plotly.newPlot(
+                plotDivId,
+                traces,
+                layout,
+                {
+                    modeBarButtonsToRemove: ['zoom2d', 'pan2d', 'autoScale2d', 'resetScale2d'],
+                    displaylogo: false,
+                    scrollZoom: false
+                }
+            ).then(gd => {
+                gd.on('plotly_hover', ev => {
+                    const pt = ev.points[0];
+                    const timeRel = pt.customdata;
+                    updateBars(timeRel);
+
+                    // Cálculo de coord. no trackPlot
+                    const tAbsol = firstT0 + timeRel;
+                    const sess   = dataBySession[currentSession] || {};
+                    const times  = sess['GPS Latitude']?.times  || [];
+                    const latArr = sess['GPS Latitude']?.values || [];
+                    const lonArr = sess['GPS Longitude']?.values || [];
+
+                    // Encontrar índice com busca binária
+                    let idx = 0, lo = 0, hi = times.length - 1;
+                    if (tAbsol <= times[0]) idx = 0;
+                    else if (tAbsol >= times[hi]) idx = hi;
+                    else {
+                        while (lo < hi - 1) {
+                            const mid = (lo + hi) >> 1;
+                            if (times[mid] <= tAbsol) lo = mid;
+                            else hi = mid;
+                        }
+                        idx = lo;
+                    }
+                    const latP = latArr[idx];
+                    const lonP = lonArr[idx];
+
+                    Plotly.restyle('trackPlot',
+                        { x: [[lonP]], y: [[latP]] },
+                        [1]
+                    );
+
+                    const xDist = pt.x;
+                    const hoverShape = {
+                        type: 'line',
+                        x0: xDist,
+                        x1: xDist,
+                        y0: 0,
+                        y1: 1,
+                        xref: 'x',
+                        yref: 'paper',
+                        line: { color: '#888', width: 1, dash: 'dot' }
+                    };
+                    Plotly.relayout(gd, { shapes: [hoverShape] });
+                });
+
+                gd.on('plotly_unhover', () => {
+                    Plotly.restyle('trackPlot',
+                        { x: [[]], y: [[]] },
+                        [1]
+                    );
+                    Plotly.relayout(gd, { shapes: [] });
+                });
+
+                gd.on('plotly_relayout', e => {
+                    const range = e['xaxis.range'];
+                    if (!Array.isArray(range)) return;
+                    const x0 = range[0];
+                    const trace0 = gd.data[0];
+                    // encontrar índice correspondente a x0 (que é distância)
+                    let idx = 0;
+                    // aqui podes usar busca linear ou binária, mas traços costumam ser menores
+                    while (idx < trace0.x.length && trace0.x[idx] < x0) idx++;
+                    if (idx >= trace0.x.length) idx = trace0.x.length - 1;
+                    const timeRel = trace0.customdata[idx];
+
+                    updateBars(timeRel);
+
+                    const tAbsol = firstT0 + timeRel;
+                    const sess   = dataBySession[currentSession] || {};
+                    const times  = sess['GPS Latitude']?.times  || [];
+                    const latArr = sess['GPS Latitude']?.values || [];
+                    const lonArr = sess['GPS Longitude']?.values || [];
+
+                    let i2 = 0, lo = 0, hi = times.length - 1;
+                    if (tAbsol <= times[0]) i2 = 0;
+                    else if (tAbsol >= times[hi]) i2 = hi;
+                    else {
+                        while (lo < hi - 1) {
+                            const mid = (lo + hi) >> 1;
+                            if (times[mid] <= tAbsol) lo = mid;
+                            else hi = mid;
+                        }
+                        i2 = lo;
+                    }
+                    const latP = latArr[i2], lonP = lonArr[i2];
+
+                    Plotly.restyle('trackPlot',
+                        { x: [[lonP]], y: [[latP]] },
+                        [1]
+                    );
+                });
+            });
+        }
+
+        function plotNormal(plotDiv) {
             const sess   = dataBySession[currentSession] || {};
             const traces = [];
             const n      = plotChannels.length;
@@ -565,7 +881,6 @@
             });
         }
 
-
         // encontra o índice mais próximo de um tempo
         function bisectLeft(arr, x) {
             let lo = 0, hi = arr.length;
@@ -578,8 +893,16 @@
         }
 
         function updateBars(ev) {
+            let timeX;
+            // Se for evento do Plotly Hover (com ev.points), usamos ev.points[0].x
+            if (ev.points) {
+                timeX = ev.points[0].x;
+            } else {
+                // Se for só um número, tomamos direto
+                timeX = ev;
+            }
+
             const sess  = dataBySession[currentSession] || {};
-            const timeX = ev.points[0].x;
             barChannels.forEach(ch => {
                 const { bar:key, curr:lbl } = idKey[ch];
                 const times  = sess[ch]?.times  || [];
@@ -689,6 +1012,24 @@
         const btnHide   = document.getElementById('btnHideDetails');
         const sidePanel = document.getElementById('sidePanel');
 
+        document.getElementById('confirmCompareLaps').addEventListener('click', () => {
+            const boxes = document.querySelectorAll('.compare-lap-checkbox:checked');
+            const sels = Array.from(boxes).map(cb => ({
+                session: cb.dataset.session,
+                lap:     parseInt(cb.value,10)
+            }));
+            if (!sels.length) {
+                alert('Seleciona pelo menos uma volta para comparar.');
+                return;
+            }
+            compareSelections = sels;
+            // Fecha o modal
+            const modalEl = document.getElementById('compareLapsModal');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            modal.hide();
+            plotAll('plotArea');
+        });
+
         btnShow.addEventListener('click', () => {
             sidePanel.classList.add('open');
         });
@@ -748,10 +1089,17 @@
             calculaMaximos();
             plotAll(plotArea);
             plotTrack();
-            plotArea.on('plotly_hover', updateBars);
 
             rows.forEach(row => {
                 row.addEventListener('click', () => {
+                    // 1) Sair do modo “Comparar Voltas”
+                    compareSelections = [];
+                    document.querySelectorAll('.compare-lap-checkbox').forEach(cb => cb.checked = false);
+                    // Se o modal de comparar estiver aberto, fecha-o
+                    const compareModalEl = document.getElementById('compareLapsModal');
+                    const compareModal = bootstrap.Modal.getInstance(compareModalEl);
+                    if (compareModal) compareModal.hide();
+
                     // Destaque na tabela
                     rows.forEach(r => r.classList.remove('table-active'));
                     row.classList.add('table-active');
@@ -768,6 +1116,8 @@
                     calculaMaximos();
                     plotAll(plotArea);
                     plotTrack();
+
+                    updateBars(0);
                 });
             });
         });
